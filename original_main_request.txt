@@ -1,0 +1,90 @@
+Request URL:
+https://disclosure2.edinet-fsa.go.jp/WEEE0040.aspx?c01d04b1610243d2a2af23e7952e8b183545578464b7eead05ed651fd7ff46c6,gx-no-cache=1756967206367
+Request Method:
+POST
+Status Code:
+200 OK
+Remote Address:
+13.107.246.60:443
+Referrer Policy:
+strict-origin-when-cross-origin
+accept-ranges:
+bytes
+cache-control:
+max-age=0, no-cache, no-store, must-revalidate
+content-encoding:
+gzip
+content-length:
+17702
+content-security-policy:
+img-src 'self' data:;object-src 'self' data: blob:;frame-src 'self' *.edinet-fsa.go.jp data: blob:;script-src 'self' 'unsafe-inline' 'unsafe-eval', style-src 'self' 'unsafe-inline', connect-src 'self', frame-ancestors 'self', font-src 'self', media-src 'self', manifest-src 'self', worker-src 'self', prefetch-src 'self', form-action 'self'
+content-type:
+application/json; charset=utf-8
+date:
+Thu, 04 Sep 2025 06:26:47 GMT
+expires:
+Thu, 04 Sep 2025 06:26:47 GMT
+last-modified:
+Thu, 04 Sep 2025 06:26:47 GMT
+set-cookie:
+ASLBSA=0003f21c6aff6be9c832e1462f5cc091723795195aaebc47b7757e48f62d60a7c084; Path=/; Secure; HttpOnly;
+set-cookie:
+ASLBSACORS=0003f21c6aff6be9c832e1462f5cc091723795195aaebc47b7757e48f62d60a7c084; SameSite=none; Path=/; Secure; HttpOnly;
+x-azure-ref:
+20250904T062646Z-16b9596bc55lmrkchC1ROMe7f800000006b0000000002hbe
+x-cache:
+CONFIG_NOCACHE
+x-content-type-options:
+nosniff
+x-frame-options:
+SAMEORIGIN
+x-robots-tag:
+noindex
+:authority:
+disclosure2.edinet-fsa.go.jp
+:method:
+POST
+:path:
+/WEEE0040.aspx?c01d04b1610243d2a2af23e7952e8b183545578464b7eead05ed651fd7ff46c6,gx-no-cache=1756967206367
+:scheme:
+https
+accept:
+*/*
+accept-encoding:
+gzip, deflate, br, zstd
+accept-language:
+it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7,ja;q=0.6
+ajax_security_token:
+C8E976E36F086147D7D141A913EBFC205CE215DFF4C5358E5A2A15055839CDCE
+content-length:
+1786
+content-type:
+application/json
+cookie:
+ApplicationGatewayAffinityCORS=c7072d6756b8bc315e4efc6181d8d055; ApplicationGatewayAffinity=c7072d6756b8bc315e4efc6181d8d055; EDINET_SessionId=A614A4190A9C64C598277BE7B028D66FA; GX_SESSION_ID=Nse96EXTbO7roGYqLtMWsdjy2C66co0Sb6XKGJ%2fpOI0%3d; GX_CLIENT_ID=1625f4c6-d000-4f35-9072-38733c9aba9b; ASLBSA=0003f21c6aff6be9c832e1462f5cc091723795195aaebc47b7757e48f62d60a7c084; ASLBSACORS=0003f21c6aff6be9c832e1462f5cc091723795195aaebc47b7757e48f62d60a7c084
+gxajaxrequest:
+1
+origin:
+https://disclosure2.edinet-fsa.go.jp
+priority:
+u=1, i
+referer:
+https://disclosure2.edinet-fsa.go.jp/WEEE0040.aspx
+sec-ch-ua:
+"Opera";v="120", "Not-A.Brand";v="8", "Chromium";v="135"
+sec-ch-ua-mobile:
+?0
+sec-ch-ua-platform:
+"Windows"
+sec-fetch-dest:
+empty
+sec-fetch-mode:
+cors
+sec-fetch-site:
+same-origin
+user-agent:
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 OPR/120.0.0.0
+x-gxauth-token:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJneC1pc3N1ZXIiOiIiLCJneC1wZ20iOiJXRUVFMDA0MCIsImd4LXZhbCI6IiIsImd4LWV4cCI6IjE3NTgyOTUyMjguNTc2OTYiLCJuYmYiOjE3NTY5NjY4MjgsImV4cCI6MTc1ODI2MjgyOCwiaWF0IjoxNzU2OTY2ODI4fQ.f543XU8V4FVEpihXMkfy3l-WXYo-PpfnulYBvlai8ss
+
+{"MPage":false,"cmpCtx":"","parms":[[],{"SEARCH_KEY_WORD":"7203","CONTAIN_FUND":false,"SYORUI_SYUBETU":"120,130,140,150,160,170,350,360,010,020,030,040,050,060,070,080,090,100,110,135,136,200,210,220,230,235,236,240,250,260,270,280,290,300,310,320,330,340,370,380,180,190,","KESSAN_NEN":"","KESSAN_TUKI":"","TEISYUTU_FROM":"19000101","TEISYUTU_TO":"20250904","FLS":true,"LPR":true,"RPR":true,"OTH":true,"TEISYUTU_KIKAN":7},"WEEE0040","Simple document search",2,1,100,{"SaitoKubun":"","SennimotoId":"WEEE0040"},"1",false,"[]",0],"hsh":[{"hsh":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJneC1pc3N1ZXIiOiIiLCJneC1wZ20iOiJXRUVFMDA0MCIsImd4LXZhbCI6IldFRUUwMDQwIiwiZ3gtZXhwIjoiMTc1ODI5NTIyOC41NzY5NiIsIm5iZiI6MTc1Njk2NjgyOCwiZXhwIjoxNzU4MjYyODI4LCJpYXQiOjE3NTY5NjY4Mjh9.Ar4un7UWXlYWJW6DIk3ZFfKFGT1-RUqjAeQeS3b2vDI","row":""},{"hsh":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJneC1pc3N1ZXIiOiIiLCJneC1wZ20iOiJXRUVFMDA0MCIsImd4LXZhbCI6IlNpbXBsZSBkb2N1bWVudCBzZWFyY2giLCJneC1leHAiOiIxNzU4Mjk1MjI4LjU3Njk2IiwibmJmIjoxNzU2OTY2ODI4LCJleHAiOjE3NTgyNjI4MjgsImlhdCI6MTc1Njk2NjgyOH0.NVc8r4gG6AFSK_GfiRm6jDheb5JlPXU2k6BkHViqtj0","row":""},{"hsh":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJneC1pc3N1ZXIiOiIiLCJneC1wZ20iOiJXRUVFMDA0MCIsImd4LXZhbCI6IjEwMCIsImd4LWV4cCI6IjE3NTgyOTUyMjguNTc2OTYiLCJuYmYiOjE3NTY5NjY4MjgsImV4cCI6MTc1ODI2MjgyOCwiaWF0IjoxNzU2OTY2ODI4fQ.Zfg-FBh3PrlnSjEwE-PxdoU-TM3Sf9e9LCPzHqVV0OU","row":""},{"hsh":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJneC1pc3N1ZXIiOiIiLCJneC1wZ20iOiJXRUVFMDA0MCIsImd4LXZhbCI6IjEiLCJneC1leHAiOiIxNzU4Mjk1MjI4LjU3Njk2IiwibmJmIjoxNzU2OTY2ODI4LCJleHAiOjE3NTgyNjI4MjgsImlhdCI6MTc1Njk2NjgyOH0.-E9a75JBuKvpKEhm96HaZw62CBVAo_7P-Sh4wIrt5_4","row":""}],"objClass":"weee0040","pkgName":"GeneXus.Programs","events":["T(O(14,'WEEE0030_EVENTS'),72).BACKSETPARAMETER"],"grids":{}}

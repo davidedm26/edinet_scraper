@@ -1,0 +1,7 @@
+requests
+beautifulsoup4
+pandas
+pymongo
+PyPDF2
+pdfminer.six
+tqdm
