@@ -4,19 +4,25 @@ import requests
 import base64
 
 
-def clean_CodeList(input_path="../data/EdinetcodeDlInfo.csv", output_path="../data/EdinetcodeDlInfo_listed.csv"):
+def clean_CodeList(input_path=None, output_path=None):
     """
     Rimuove la prima riga, prende solo le colonne per posizione (modifica gli indici se necessario)
     e filtra solo le righe con tipo Listed Company.
+    Gestisce i path di input/output in modo robusto rispetto alla directory di esecuzione.
     """
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+    if input_path is None:
+        input_path = os.path.join(base_dir, 'EdinetcodeDlInfo.csv')
+    if output_path is None:
+        output_path = os.path.join(base_dir, 'Edinet_codeList.csv')
     df = pd.read_csv(input_path, skiprows=1, encoding="cp932")
     print(df.iloc[:, 2].unique())
     #print("Colonne disponibili:", df.columns.tolist())
     # Seleziona le colonne per posizione: ad esempio 0, 1, 2
     df = df.iloc[:, [0, 2, 7]]
     # Filtra solo le righe dove la terza colonna (indice 2) è "Listed company"
-    df = df[df.iloc[:, 2] == "Listed company"]
-    print(df.head(10))
+    df = df[df.iloc[:, 1] == "Listed company"]
+    #print(df.head(10))
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     df.to_csv(output_path, index=False, encoding='utf-8-sig')
     print(f"File trasformato salvato in: {output_path}")
@@ -99,7 +105,5 @@ def get_codeList():
     raise Exception("Nessun file CSV trovato nello ZIP")
 
 if __name__ == "__main__":
-    input_path = os.path.join(os.path.dirname(__file__), "..", "data", "EdinetcodeDlInfo.csv")
-    output_path = os.path.join(os.path.dirname(__file__), "..", "data", "Edinet_codeList.csv")
     get_codeList()
-    clean_CodeList(input_path=input_path, output_path=output_path)
+    clean_CodeList()

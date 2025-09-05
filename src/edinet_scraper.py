@@ -1,3 +1,27 @@
+import sys
+sys.path.append("../src")
+import codeList_utils
+import pandas as pd
+
+
+def schedule_tasks_from_csv(csv_path="../data/Edinet_codeList.csv", batch_size=10):
+    """
+    Legge i codici dal CSV e processa i task in batch da batch_size.
+    """
+    csv_path = os.path.join(os.path.dirname(__file__), "..", "data", "Edinet_codeList.csv")
+    df = pd.read_csv(csv_path, encoding="utf-8-sig")
+    codes = df.iloc[:, 0].tolist()  # Prima colonna: Edinet Code
+    total = len(codes)
+    print(f"Totale aziende da processare: {total}")
+    for start in range(0, total, batch_size):
+        batch = codes[start:start+batch_size]
+        print(f"\nBatch {start//batch_size + 1}: {batch}")
+        for edinet_code in batch:
+            try:
+                extract_all_for_company(edinet_code)
+            except Exception as e:
+                print(f"Errore per {edinet_code}: {e}")
+                
 # Funzione per processare i task dal file tasks.json
 def process_tasks_from_file(tasks_file="../tasks.json", max_files=300, max_workers_pdf=32, max_workers_csv=16):
     import json
@@ -493,6 +517,7 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
 
     # Scarica PDF e CSV in parallelo
     import threading
+    
     pdf_stats = {}
     csv_stats = {}
     def pdf_job():
@@ -511,13 +536,6 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     return stats
     
 if __name__ == "__main__":
-    # Se esiste il file tasks.json, processa i task da lì
-    import os
-    tasks_file = os.path.join(os.path.dirname(__file__), "../tasks.json")
-    if os.path.exists(tasks_file):
-        process_tasks_from_file(tasks_file="../tasks.json")
-    else:
-        lista_aziende = ["7203", "7205", "2166"]  # Lista codici azienda
-        for edinet_code in lista_aziende:
-            extract_all_for_company(edinet_code)
-            # time.sleep(2)  # opzionale, per non saturare il server
+    # Esegui la pulizia del CSV e schedula i task a batch
+    codeList_utils.clean_CodeList()
+    schedule_tasks_from_csv(csv_path="../data/EdinetcodeDlInfo_listed.csv", batch_size=10)
