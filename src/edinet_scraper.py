@@ -1,3 +1,26 @@
+# Funzione per processare i task dal file tasks.json
+def process_tasks_from_file(tasks_file="../tasks.json", max_files=300, max_workers_pdf=32, max_workers_csv=16):
+    import json
+    import os
+    tasks_path = os.path.join(os.path.dirname(__file__), tasks_file)
+    with open(tasks_path, "r", encoding="utf-8") as f:
+        tasks = json.load(f)
+    for task in tasks:
+        if task.get("status") == "pending":
+            edinet_code = task["edinet_code"]
+            print(f"\n--- Processing {edinet_code} ---")
+            try:
+                stats = extract_all_for_company(edinet_code, max_files=max_files, max_workers=max_workers_pdf)
+                task["status"] = "done"
+                task["stats"] = stats
+            except Exception as e:
+                print(f"Errore per {edinet_code}: {e}")
+                task["status"] = "error"
+                task["stats"] = {"error": str(e)}
+            # Salva lo stato aggiornato dopo ogni task
+            with open(tasks_path, "w", encoding="utf-8") as f:
+                json.dump(tasks, f, indent=2)
+    print("\n--- Tutti i task sono stati processati ---")
 def search_files_by_company(edinet_code, session=None):
     """
     Searches for files for a specific company (edinet_code).
@@ -225,7 +248,7 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
             else:
                 return False, f"Attempt {attempt}: {str(e)}"
 
-def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_workers=16):
+def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_workers=32):
     """
     Downloads PDF files in parallel using multithreading.
     Shows progress bar and prints final statistics.
@@ -236,6 +259,7 @@ def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_work
     total = min(len(results), max_files)
     start_time = time.time()
     pdf_downloaded = 0
+    pdf_not_found = 0
     errors = 0
 
     # Use ThreadPoolExecutor for parallel downloads
@@ -249,16 +273,26 @@ def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_work
             success, info = future.result()
             if success:
                 pdf_downloaded += 1
+            elif info in ("No PDF for this document", "Missing SYORUI_KANRI_NO_ENCRYPT"):
+                pdf_not_found += 1
             else:
                 errors += 1
-            pbar.set_postfix({"Downloaded": pdf_downloaded, "Errors": errors})
+            pbar.set_postfix({"Downloaded": pdf_downloaded, "Not found": pdf_not_found, "Errors": errors})
             pbar.update(1)
 
     elapsed = time.time() - start_time
     print("\n--- FINAL STATISTICS ---")
     print(f"PDFs downloaded: {pdf_downloaded}")
+    print(f"PDFs not found: {pdf_not_found}")
     print(f"Errors: {errors}")
     print(f"Total time: {elapsed:.2f} seconds")
+    
+    return {
+        "pdf_downloaded": pdf_downloaded,
+        "pdf_not_found": pdf_not_found,
+        "pdf_errors": errors,
+        "pdf_time": elapsed
+    }
 
 import re
 import base64
@@ -371,6 +405,8 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
                 csv_not_found += 1
             elif success:
                 csv_downloaded += 1
+            elif info in ("not_found", "Missing SYORUI_KANRI_NO_ENCRYPT"):
+                csv_not_found += 1
             else:
                 errors += 1
             pbar.set_postfix({"Downloaded": csv_downloaded, "Not found": csv_not_found, "Errors": errors})
@@ -379,8 +415,16 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
     elapsed = time.time() - start_time
     print("\n--- FINAL STATISTICS (CSV) ---")
     print(f"CSVs downloaded: {csv_downloaded}")
+    print(f"CSVs not found: {csv_not_found}")
     print(f"Errors: {errors}")
     print(f"Total time: {elapsed:.2f} seconds")
+    
+    return {
+        "csv_downloaded": csv_downloaded,
+        "csv_not_found": csv_not_found,
+        "csv_errors": errors,
+        "csv_time": elapsed
+    }
 
 def get_session_tokens():
     """
@@ -394,23 +438,34 @@ def get_session_tokens():
 
     url = "https://disclosure2.edinet-fsa.go.jp/WEEE0040.aspx"
     session = requests.Session()
-    resp = session.get(url)
-    response = session.get(url)
-    soup = BeautifulSoup(response.text, "html.parser")
-    gxstate_input = soup.find("input", {"name": "GXState"})
-    gxstate_raw = gxstate_input["value"]
-    gxstate = json.loads(gxstate_raw)
-
-    tokens = {
-        "gx_auth_token": gxstate.get("GX_AUTH_WEEE0040"),
-        "ajax_token": gxstate.get("AJAX_SECURITY_TOKEN"),
-        "gx_hash_name": gxstate.get("gxhash_vPGMNAME"),
-        "gx_hash_desc": gxstate.get("gxhash_vPGMDESC"),
-        "gxhash_vW_PAGEMAX": gxstate.get("gxhash_vW_PAGEMAX"),
-        "gxhash_vW_LANGUAGE": gxstate.get("gxhash_vW_LANGUAGE"),
-        "session_cookies": session.cookies.get_dict()
-    }
-    return session, tokens
+    max_retries = 5
+    for attempt in range(1, max_retries + 1):
+        resp = session.get(url)
+        response = session.get(url)
+        soup = BeautifulSoup(response.text, "html.parser")
+        gxstate_input = soup.find("input", {"name": "GXState"})
+        if gxstate_input is not None:
+            gxstate_raw = gxstate_input["value"]
+            gxstate = json.loads(gxstate_raw)
+            tokens = {
+                "gx_auth_token": gxstate.get("GX_AUTH_WEEE0040"),
+                "ajax_token": gxstate.get("AJAX_SECURITY_TOKEN"),
+                "gx_hash_name": gxstate.get("gxhash_vPGMNAME"),
+                "gx_hash_desc": gxstate.get("gxhash_vPGMDESC"),
+                "gxhash_vW_PAGEMAX": gxstate.get("gxhash_vW_PAGEMAX"),
+                "gxhash_vW_LANGUAGE": gxstate.get("gxhash_vW_LANGUAGE"),
+                "session_cookies": session.cookies.get_dict()
+            }
+            return session, tokens
+        else:
+            print(f"[get_session_tokens] Tentativo {attempt}: GXState non trovato. Ritento...")
+            if attempt < max_retries:
+                import time
+                time.sleep(2)
+            else:
+                print("[get_session_tokens] Errore: GXState non trovato dopo vari tentativi.")
+                print(response.text[:1000])  # Stampa i primi 1000 caratteri per debug
+                raise RuntimeError("GXState non trovato nella pagina iniziale")
 
 from bs4 import BeautifulSoup
 import re
@@ -438,15 +493,31 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
 
     # Scarica PDF e CSV in parallelo
     import threading
-    t_pdf = threading.Thread(target=download_pdfs, args=(risultati, edinet_code, session, tokens, max_files, max_workers))
-    t_csv = threading.Thread(target=download_csvs, args=(risultati, edinet_code, session, tokens, max_files, max_workers))
+    pdf_stats = {}
+    csv_stats = {}
+    def pdf_job():
+        nonlocal pdf_stats
+        pdf_stats = download_pdfs(risultati, edinet_code, session, tokens, max_files, max_workers)
+    def csv_job():
+        nonlocal csv_stats
+        csv_stats = download_csvs(risultati, edinet_code, session, tokens, max_files, 16)
+    t_pdf = threading.Thread(target=pdf_job)
+    t_csv = threading.Thread(target=csv_job)
     t_pdf.start()
     t_csv.start()
     t_pdf.join()
     t_csv.join()
+    stats = {**pdf_stats, **csv_stats}
+    return stats
     
 if __name__ == "__main__":
-    lista_aziende = ["7203", "7205", "2166"]  # Lista codici azienda
-    for edinet_code in lista_aziende:
-        extract_all_for_company(edinet_code)
-        # time.sleep(2)  # opzionale, per non saturare il server
+    # Se esiste il file tasks.json, processa i task da lì
+    import os
+    tasks_file = os.path.join(os.path.dirname(__file__), "../tasks.json")
+    if os.path.exists(tasks_file):
+        process_tasks_from_file(tasks_file="../tasks.json")
+    else:
+        lista_aziende = ["7203", "7205", "2166"]  # Lista codici azienda
+        for edinet_code in lista_aziende:
+            extract_all_for_company(edinet_code)
+            # time.sleep(2)  # opzionale, per non saturare il server

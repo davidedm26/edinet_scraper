@@ -1,0 +1,44 @@
+[
+  {
+    "edinet_code": "7203",
+    "status": "done",
+    "stats": {
+      "pdf_downloaded": 154,
+      "pdf_not_found": 0,
+      "pdf_errors": 2,
+      "pdf_time": 79.4949357509613,
+      "csv_downloaded": 139,
+      "csv_not_found": 17,
+      "csv_errors": 0,
+      "csv_time": 73.6601414680481
+    }
+  },
+  {
+    "edinet_code": "7205",
+    "status": "done",
+    "stats": {
+      "pdf_downloaded": 92,
+      "pdf_not_found": 0,
+      "pdf_errors": 1,
+      "pdf_time": 46.11913204193115,
+      "csv_downloaded": 82,
+      "csv_not_found": 11,
+      "csv_errors": 0,
+      "csv_time": 44.540438175201416
+    }
+  },
+  {
+    "edinet_code": "2166",
+    "status": "done",
+    "stats": {
+      "pdf_downloaded": 0,
+      "pdf_not_found": 0,
+      "pdf_errors": 0,
+      "pdf_time": 0.0016603469848632812,
+      "csv_downloaded": 0,
+      "csv_not_found": 0,
+      "csv_errors": 0,
+      "csv_time": 0.0027141571044921875
+    }
+  }
+]
