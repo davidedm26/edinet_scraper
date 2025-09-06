@@ -528,6 +528,7 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
 if __name__ == "__main__":
     try:
         # Esegui la pulizia del CSV e schedula i task a batch
+        codeList_utils.get_codeList()
         codeList_utils.clean_CodeList()
         schedule_tasks_from_csv(batch_size=10)
     except KeyboardInterrupt:
