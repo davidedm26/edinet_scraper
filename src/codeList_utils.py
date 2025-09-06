@@ -101,7 +101,7 @@ def get_codeList():
             print(f"[get_codeList] File trovato nello ZIP: {name}")
             if name.endswith(".csv"):
                 os.makedirs("data", exist_ok=True)
-                out_path = os.path.join("data", name)
+                out_path = os.path.join("..","data", name)
                 with open(out_path, "wb") as f:
                     f.write(z.read(name))
                 print(f"[get_codeList] CSV salvato in: {out_path}")
