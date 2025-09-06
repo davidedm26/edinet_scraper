@@ -12,10 +12,10 @@ from tqdm import tqdm
 import codeList_utils
 
 # Path portabili
-DATA_DIR = os.environ.get("DATA_DIR", "data")
-csv_path = os.path.join(DATA_DIR, "Edinet_codeList.csv")
+DATA_DIR = os.path.join(os.path.dirname(__file__),".." ,"data") 
+output_csv_path = os.path.join(DATA_DIR, "Edinet_codeList.csv")
 
-def schedule_tasks_from_csv(csv_path=csv_path, batch_size=10):
+def schedule_tasks_from_csv(csv_path=output_csv_path, batch_size=10):
     """
     Legge i codici dal CSV e processa i task in batch da batch_size.
     """
@@ -195,7 +195,12 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
 
     tipo_documento = doc.get("SYORUI_SB_CD_ID", "unknown")
     save_dir = os.path.join(".", "data", edinet_code, "pdf", tipo_documento)
-    os.makedirs(save_dir, exist_ok=True)
+    # Define save_dir relative to the current file (__file__)
+    save_dir = os.path.join(os.path.dirname(__file__), "..", "data", edinet_code, "pdf", tipo_documento)
+    # Crea la directory se non esiste
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir, exist_ok=True)
+    
     kanri_no_encrypt = doc.get("SYORUI_KANRI_NO_ENCRYPT")
     if not kanri_no_encrypt:
         return False, "Missing SYORUI_KANRI_NO_ENCRYPT"
@@ -326,7 +331,7 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
         return True, "not_found"
 
     tipo_documento = doc.get("SYORUI_SB_CD_ID", "unknown")
-    save_dir = os.path.join(".", "data", edinet_code, "csv", tipo_documento)
+    save_dir = os.path.join(os.path.dirname(__file__), "..", "data", edinet_code, "csv", tipo_documento)
     os.makedirs(save_dir, exist_ok=True)
     kanri_no_encrypt = doc.get("SYORUI_KANRI_NO_ENCRYPT")
     if not kanri_no_encrypt:

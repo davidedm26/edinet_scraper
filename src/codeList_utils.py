@@ -33,6 +33,8 @@ def get_codeList():
     Gli hash e i token vengono recuperati tramite una GET iniziale.
     """
     import json
+    import os
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
     url = "https://disclosure2.edinet-fsa.go.jp/weee0020.aspx"
     print(f"[get_codeList] Avvio download EDINET code list da: {url}")
     session = requests.Session()
@@ -94,14 +96,14 @@ def get_codeList():
         raise Exception("Base64 ZIP non trovato nella risposta")
     base64_data = match.group(1)
     file_data = base64.b64decode(base64_data)
-    import zipfile, io, os
+    import zipfile, io
     print("[get_codeList] Estrazione ZIP...")
     with zipfile.ZipFile(io.BytesIO(file_data)) as z:
         for name in z.namelist():
             print(f"[get_codeList] File trovato nello ZIP: {name}")
             if name.endswith(".csv"):
-                os.makedirs("data", exist_ok=True)
-                out_path = os.path.join("..","data", name)
+                os.makedirs(base_dir, exist_ok=True)
+                out_path = os.path.join(base_dir, name)
                 with open(out_path, "wb") as f:
                     f.write(z.read(name))
                 print(f"[get_codeList] CSV salvato in: {out_path}")
@@ -111,4 +113,4 @@ def get_codeList():
 
 if __name__ == "__main__":
     get_codeList()
-    clean_CodeList()
+    clean_CodeList() 
