@@ -13,4 +13,5 @@ COPY src/ ./src/
 
 
 # Comando di default
-CMD ["python", "src/edinet_scraper.py"]
+CMD ["bash"]
+#CMD ["python", "src/edinet_scraper.py"]
