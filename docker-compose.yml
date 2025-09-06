@@ -7,12 +7,14 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ./data/db:/data/db
+      - ./db:/db
 
   etl:
     build: .
     container_name: etl_pipeline
     depends_on:
       - mongodb
+    volumes:
+      - ./data:/data
     environment:
       MONGO_URI: mongodb://mongodb:27017
