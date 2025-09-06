@@ -34,13 +34,16 @@ def get_codeList():
     """
     import json
     url = "https://disclosure2.edinet-fsa.go.jp/weee0020.aspx"
+    print(f"[get_codeList] Avvio download EDINET code list da: {url}")
     session = requests.Session()
     # GET iniziale per recuperare i token
     resp = session.get(url)
+    print(f"[get_codeList] GET iniziale completata, status: {resp.status_code}")
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(resp.text, "html.parser")
     gxstate_input = soup.find("input", {"name": "GXState"})
     if gxstate_input is None:
+        print("[get_codeList] ERRORE: GXState non trovato nella pagina iniziale")
         raise Exception("GXState non trovato nella pagina iniziale")
     gxstate_raw = gxstate_input["value"]
     gxstate = json.loads(gxstate_raw)
@@ -48,6 +51,7 @@ def get_codeList():
     ajax_token = gxstate.get("AJAX_SECURITY_TOKEN")
     gx_hash_name = gxstate.get("gxhash_vPGMNAME")
     gx_hash_desc = gxstate.get("gxhash_vPGMDESC")
+    print(f"[get_codeList] Token recuperati: GX_AUTH_WEEE0020={gx_auth_token}, AJAX_SECURITY_TOKEN={ajax_token}")
     # Costruisci il payload dinamicamente
     payload = {
         "MPage": False,
@@ -78,30 +82,34 @@ def get_codeList():
         "ajax_security_token": ajax_token,
         "x-gxauth-token": gx_auth_token,
     }
-    # Esegui la richiesta POST
+    print("[get_codeList] Invio richiesta POST per download ZIP...")
     response = session.post(url, headers=headers, json=payload)
+    print(f"[get_codeList] POST completata, status: {response.status_code}")
     data = response.json()
     # Salva la risposta JSON per analisi
-    import json
     with open("data/edinet_codeList_response.txt", "w", encoding="utf-8") as f:
         f.write(json.dumps(data, indent=2, ensure_ascii=False))
     dl_script = data.get("gxProps", [{}])[0].get("TXTSCRIPT", {}).get("Caption", "")
     import re
     match = re.search(r'data:;base64,([A-Za-z0-9+/=]+)', dl_script)
     if not match:
+        print("[get_codeList] ERRORE: Base64 ZIP non trovato nella risposta!")
         raise Exception("Base64 ZIP non trovato nella risposta")
     base64_data = match.group(1)
     file_data = base64.b64decode(base64_data)
     import zipfile, io, os
+    print("[get_codeList] Estrazione ZIP...")
     with zipfile.ZipFile(io.BytesIO(file_data)) as z:
         for name in z.namelist():
+            print(f"[get_codeList] File trovato nello ZIP: {name}")
             if name.endswith(".csv"):
                 os.makedirs("data", exist_ok=True)
                 out_path = os.path.join("data", name)
                 with open(out_path, "wb") as f:
                     f.write(z.read(name))
-                print(f"Salvato: {out_path}")
+                print(f"[get_codeList] CSV salvato in: {out_path}")
                 return out_path
+    print("[get_codeList] ERRORE: Nessun file CSV trovato nello ZIP!")
     raise Exception("Nessun file CSV trovato nello ZIP")
 
 if __name__ == "__main__":
