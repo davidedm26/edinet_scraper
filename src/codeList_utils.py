@@ -86,9 +86,6 @@ def get_codeList():
     response = session.post(url, headers=headers, json=payload)
     print(f"[get_codeList] POST completata, status: {response.status_code}")
     data = response.json()
-    # Salva la risposta JSON per analisi
-    with open("data/edinet_codeList_response.txt", "w", encoding="utf-8") as f:
-        f.write(json.dumps(data, indent=2, ensure_ascii=False))
     dl_script = data.get("gxProps", [{}])[0].get("TXTSCRIPT", {}).get("Caption", "")
     import re
     match = re.search(r'data:;base64,([A-Za-z0-9+/=]+)', dl_script)
