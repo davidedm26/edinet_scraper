@@ -1,14 +1,24 @@
-import sys
-sys.path.append("../src")
-import codeList_utils
+
+# Import standard
+import os
+import time
+import json
+import re
+
 import pandas as pd
+from tqdm import tqdm
 
+# Import locali
+import codeList_utils
 
-def schedule_tasks_from_csv(csv_path="../data/Edinet_codeList.csv", batch_size=10):
+# Path portabili
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+csv_path = os.path.join(DATA_DIR, "Edinet_codeList.csv")
+
+def schedule_tasks_from_csv(csv_path=csv_path, batch_size=10):
     """
     Legge i codici dal CSV e processa i task in batch da batch_size.
     """
-    csv_path = os.path.join(os.path.dirname(__file__), "..", "data", "Edinet_codeList.csv")
     df = pd.read_csv(csv_path, encoding="utf-8-sig")
     codes = df.iloc[:, 0].tolist()  # Prima colonna: Edinet Code
     total = len(codes)
@@ -23,9 +33,7 @@ def schedule_tasks_from_csv(csv_path="../data/Edinet_codeList.csv", batch_size=1
                 print(f"Errore per {edinet_code}: {e}")
                 
 # Funzione per processare i task dal file tasks.json
-def process_tasks_from_file(tasks_file="../tasks.json", max_files=300, max_workers_pdf=32, max_workers_csv=16):
-    import json
-    import os
+def process_tasks_from_file(tasks_file="../tasks.json", max_files=300, max_workers=32):
     tasks_path = os.path.join(os.path.dirname(__file__), tasks_file)
     with open(tasks_path, "r", encoding="utf-8") as f:
         tasks = json.load(f)
@@ -34,7 +42,7 @@ def process_tasks_from_file(tasks_file="../tasks.json", max_files=300, max_worke
             edinet_code = task["edinet_code"]
             print(f"\n--- Processing {edinet_code} ---")
             try:
-                stats = extract_all_for_company(edinet_code, max_files=max_files, max_workers=max_workers_pdf)
+                stats = extract_all_for_company(edinet_code, max_files=max_files, max_workers=max_workers)
                 task["status"] = "done"
                 task["stats"] = stats
             except Exception as e:
@@ -50,8 +58,6 @@ def search_files_by_company(edinet_code, session=None):
     Searches for files for a specific company (edinet_code).
     Returns the list of found results and the tokens.
     """
-    import json
-
     # If no session is provided, create one and get tokens
     if session is None:
         session, tokens = get_session_tokens()
@@ -183,9 +189,6 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
     Worker function for downloading a single PDF document.
     Skips if SYORUI_KANRI_NO_ENCRYPT is missing.
     """
-    import os
-    import time
-
     if not doc.get("SYORUI_KANRI_NO_ENCRYPT"):
         # Documento senza PDF
         return False, "No PDF for this document"
@@ -277,9 +280,6 @@ def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_work
     Downloads PDF files in parallel using multithreading.
     Shows progress bar and prints final statistics.
     """
-    from tqdm import tqdm
-    import time
-
     total = min(len(results), max_files)
     start_time = time.time()
     pdf_downloaded = 0
@@ -319,12 +319,8 @@ def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_work
     }
 
 import re
-import base64
 
 def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
-    import os
-    import time
-
     if not doc.get("SYORUI_KANRI_NO_ENCRYPT"):
         # Documento senza CSV
         return True, "not_found"
@@ -407,10 +403,6 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
     """
     Downloads CSV files in parallel using multithreading.
     """
-    from tqdm import tqdm
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-    import time
-
     total = min(len(results), max_files)
     start_time = time.time()
     csv_downloaded = 0
@@ -457,7 +449,6 @@ def get_session_tokens():
     - dictionary with all required tokens (extracted from GXState)
     """
     import requests
-    import json
     from bs4 import BeautifulSoup
 
     url = "https://disclosure2.edinet-fsa.go.jp/WEEE0040.aspx"
@@ -491,8 +482,8 @@ def get_session_tokens():
                 print(response.text[:1000])  # Stampa i primi 1000 caratteri per debug
                 raise RuntimeError("GXState non trovato nella pagina iniziale")
 
-from bs4 import BeautifulSoup
-import re
+
+
 
 def extract_pdf_url_from_html(html):
     """
@@ -504,8 +495,7 @@ def extract_pdf_url_from_html(html):
         return match.group(1)
     return None
 
-# Example usage:
-import threading
+
 
 def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     """
@@ -522,10 +512,10 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     csv_stats = {}
     def pdf_job():
         nonlocal pdf_stats
-        pdf_stats = download_pdfs(risultati, edinet_code, session, tokens, max_files, max_workers)
+        pdf_stats = download_pdfs(risultati, edinet_code, session, tokens, max_files, max_workers*2)
     def csv_job():
         nonlocal csv_stats
-        csv_stats = download_csvs(risultati, edinet_code, session, tokens, max_files, 16)
+        csv_stats = download_csvs(risultati, edinet_code, session, tokens, max_files, max_workers)
     t_pdf = threading.Thread(target=pdf_job)
     t_csv = threading.Thread(target=csv_job)
     t_pdf.start()
@@ -536,6 +526,9 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     return stats
     
 if __name__ == "__main__":
-    # Esegui la pulizia del CSV e schedula i task a batch
-    codeList_utils.clean_CodeList()
-    schedule_tasks_from_csv(csv_path="../data/EdinetcodeDlInfo_listed.csv", batch_size=10)
+    try:
+        # Esegui la pulizia del CSV e schedula i task a batch
+        codeList_utils.clean_CodeList()
+        schedule_tasks_from_csv(batch_size=10)
+    except KeyboardInterrupt:
+        print("Exit....")
