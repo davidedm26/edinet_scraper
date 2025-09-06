@@ -1,7 +1,7 @@
-requests
-beautifulsoup4
-pandas
-pymongo
-PyPDF2
-pdfminer.six
-tqdm
+requests==2.32.5
+beautifulsoup4==4.13.5
+pandas==2.3.2
+pymongo==4.14.1
+PyPDF2==3.0.1
+pdfminer.six==20250506
+tqdm==4.67.1
