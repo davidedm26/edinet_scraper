@@ -11,7 +11,7 @@ services:
 
   etl:
     build: .
-    container_name: etl_pipeline
+    container_name: edinet_scraper
     depends_on:
       - mongodb
     volumes:
