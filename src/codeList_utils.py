@@ -36,11 +36,11 @@ def get_codeList():
     import os
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
     url = "https://disclosure2.edinet-fsa.go.jp/weee0020.aspx"
-    print(f"[get_codeList] Avvio download EDINET code list da: {url}")
+    #print(f"[get_codeList] Avvio download EDINET code list da: {url}")
     session = requests.Session()
     # GET iniziale per recuperare i token
     resp = session.get(url)
-    print(f"[get_codeList] GET iniziale completata, status: {resp.status_code}")
+    #print(f"[get_codeList] GET iniziale completata, status: {resp.status_code}")
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(resp.text, "html.parser")
     gxstate_input = soup.find("input", {"name": "GXState"})
@@ -53,7 +53,7 @@ def get_codeList():
     ajax_token = gxstate.get("AJAX_SECURITY_TOKEN")
     gx_hash_name = gxstate.get("gxhash_vPGMNAME")
     gx_hash_desc = gxstate.get("gxhash_vPGMDESC")
-    print(f"[get_codeList] Token recuperati: GX_AUTH_WEEE0020={gx_auth_token}, AJAX_SECURITY_TOKEN={ajax_token}")
+    #print(f"[get_codeList] Token recuperati: GX_AUTH_WEEE0020={gx_auth_token}, AJAX_SECURITY_TOKEN={ajax_token}")
     # Costruisci il payload dinamicamente
     payload = {
         "MPage": False,

@@ -176,6 +176,7 @@ def search_files_by_company(edinet_code, session=None):
         data_page = response_page.json()
         results_json = data_page.get("gxValues", [{}])[0].get("AV113W_RESULT_LIST_JSON", "[]")
         results = json.loads(results_json)
+        results = [r for r in results if r.get("EDINET_CD") == edinet_code]
         all_results.extend(results)
     return all_results, tokens
 
@@ -192,8 +193,9 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
     if not doc.get("SYORUI_KANRI_NO_ENCRYPT"):
         # Documento senza PDF
         return False, "No PDF for this document"
-
+    
     tipo_documento = doc.get("SYORUI_SB_CD_ID", "unknown")
+    company_name = doc.get("KAISHA_MEI", "unknown")
     save_dir = os.path.join(".", "data", edinet_code, "pdf", tipo_documento)
     # Define save_dir relative to the current file (__file__)
     save_dir = os.path.join(os.path.dirname(__file__), "..", "data", edinet_code, "pdf", tipo_documento)
@@ -271,7 +273,8 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
                 filename = os.path.join(save_dir, f"{codice_file}.pdf")
                 with open(filename, "wb") as f:
                     f.write(pdf_file_response.content)
-                return True, filename
+                # Restituisco tuple come per i CSV
+                return True, (filename, tipo_documento, company_name)
             else:
                 raise Exception("PDF download failed")
         except Exception as e:
@@ -290,18 +293,26 @@ def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_work
     pdf_downloaded = 0
     pdf_not_found = 0
     errors = 0
+    pdf_metadata = []
 
-    # Use ThreadPoolExecutor for parallel downloads
     with ThreadPoolExecutor(max_workers=max_workers) as executor, tqdm(total=total, desc="Download PDF", unit="file") as pbar:
         futures = []
         for idx, doc in enumerate(results):
             if idx >= max_files:
                 break
             futures.append(executor.submit(download_pdf_worker, doc, edinet_code, session, tokens))
-        for future in as_completed(futures):
+        for idx, future in enumerate(as_completed(futures)):
             success, info = future.result()
-            if success:
+            if success and isinstance(info, tuple):
                 pdf_downloaded += 1
+                pdf_metadata.append({
+                    "edinet_code": edinet_code,
+                    "file_type": "pdf",
+                    "file_path": info[0],
+                    "doc": results[idx] if idx < len(results) else {},
+                    "document_type": info[1],
+                    "company_name": info[2]
+                })
             elif info in ("No PDF for this document", "Missing SYORUI_KANRI_NO_ENCRYPT"):
                 pdf_not_found += 1
             else:
@@ -320,7 +331,8 @@ def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_work
         "pdf_downloaded": pdf_downloaded,
         "pdf_not_found": pdf_not_found,
         "pdf_errors": errors,
-        "pdf_time": elapsed
+        "pdf_time": elapsed,
+        "pdf_metadata": pdf_metadata
     }
 
 import re
@@ -330,8 +342,9 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
         # Documento senza CSV
         return True, "not_found"
 
-    tipo_documento = doc.get("SYORUI_SB_CD_ID", "unknown")
-    save_dir = os.path.join(os.path.dirname(__file__), "..", "data", edinet_code, "csv", tipo_documento)
+    document_type = doc.get("SYORUI_SB_CD_ID", "unknown")
+    company_name = doc.get("KAISHA_MEI", "unknown")
+    save_dir = os.path.join(os.path.dirname(__file__), "..", "data", edinet_code, "csv", document_type)
     os.makedirs(save_dir, exist_ok=True)
     kanri_no_encrypt = doc.get("SYORUI_KANRI_NO_ENCRYPT")
     if not kanri_no_encrypt:
@@ -397,7 +410,7 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
             filename = os.path.join(save_dir, f"{codice_file}.zip")
             with open(filename, "wb") as f:
                 f.write(file_data)
-            return True, filename
+            return True, (filename, document_type, company_name)
         except Exception as e:
             if attempt < max_retries:
                 time.sleep(2)
@@ -413,6 +426,7 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
     csv_downloaded = 0
     csv_not_found = 0
     errors = 0
+    csv_metadata = []
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor, tqdm(total=total, desc="Download CSV", unit="file") as pbar:
         futures = []
@@ -420,13 +434,19 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
             if idx >= max_files:
                 break
             futures.append(executor.submit(download_csv_worker, doc, edinet_code, session, tokens))
-        for future in as_completed(futures):
+        for idx, future in enumerate(as_completed(futures)):
             success, info = future.result()
-            if success and info == "not_found":
-                csv_not_found += 1
-            elif success:
+            if success and isinstance(info, str) and info != "not_found":
                 csv_downloaded += 1
-            elif info in ("not_found", "Missing SYORUI_KANRI_NO_ENCRYPT"):
+                csv_metadata.append({
+                    "edinet_code": edinet_code,
+                    "file_type": "csv",
+                    "file_path": info[0],
+                    "doc": results[idx] if idx < len(results) else {},
+                    "document_type": info[1],
+                    "company_name": info[2]
+                })
+            elif info == "not_found" or info == "Missing SYORUI_KANRI_NO_ENCRYPT":
                 csv_not_found += 1
             else:
                 errors += 1
@@ -444,7 +464,8 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
         "csv_downloaded": csv_downloaded,
         "csv_not_found": csv_not_found,
         "csv_errors": errors,
-        "csv_time": elapsed
+        "csv_time": elapsed,
+        "csv_metadata": csv_metadata
     }
 
 def get_session_tokens():
@@ -513,6 +534,7 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     # Scarica PDF e CSV in parallelo
     import threading
     
+    import db_utils
     pdf_stats = {}
     csv_stats = {}
     def pdf_job():
@@ -527,8 +549,26 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     t_csv.start()
     t_pdf.join()
     t_csv.join()
-    stats = {**pdf_stats, **csv_stats}
-    return stats
+    # Salva i metadati su MongoDB
+    db = db_utils.connect_mongo()
+    for file in pdf_stats.get("pdf_metadata", []):
+        db_utils.insert_file_metadata(db, file["edinet_code"], file["file_type"], file["file_path"], file["doc"])
+    for file in csv_stats.get("csv_metadata", []):
+        db_utils.insert_file_metadata(db, file["edinet_code"], file["file_type"], file["file_path"], file["doc"])
+    # Unisco statistiche e metadati
+    stats_metadata = {
+        "pdf_downloaded": pdf_stats.get("pdf_downloaded", 0),
+        "pdf_not_found": pdf_stats.get("pdf_not_found", 0),
+        "pdf_errors": pdf_stats.get("pdf_errors", 0),
+        "pdf_time": pdf_stats.get("pdf_time", 0),
+        "csv_downloaded": csv_stats.get("csv_downloaded", 0),
+        "csv_not_found": csv_stats.get("csv_not_found", 0),
+        "csv_errors": csv_stats.get("csv_errors", 0),
+        "csv_time": csv_stats.get("csv_time", 0),
+        "pdf_files": pdf_stats.get("pdf_metadata", []),
+        "csv_files": csv_stats.get("csv_metadata", [])
+    }
+    return stats_metadata
     
 if __name__ == "__main__":
     try:
