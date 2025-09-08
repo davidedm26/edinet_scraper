@@ -261,18 +261,11 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
                 break
             futures.append(executor.submit(download_csv_worker, doc, edinet_code, session, tokens))
         for idx, future in enumerate(as_completed(futures)):
-            success, info = future.result()
-            if success and isinstance(info, str):
+            success, info_and_metadata = future.result()
+            if success and isinstance(info_and_metadata, tuple):
                 csv_downloaded += 1
-                batch_metadata.append({
-                    "edinet_code": edinet_code,
-                    "file_type": "csv",
-                    "file_path": info[0],
-                    "doc": results[idx] if idx < len(results) else {},
-                    "document_type": info[1],
-                    "company_name": info[2]
-                })
-            elif info == "not_found" :
+                batch_metadata.append(info_and_metadata[1])            
+            elif info_and_metadata[0] in ( "not_found") :
                 csv_not_found += 1
             else:
                 errors += 1

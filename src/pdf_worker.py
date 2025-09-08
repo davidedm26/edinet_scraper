@@ -121,15 +121,15 @@ def generate_MetaData(doc, filename):
             "target_company": doc.get("IGAITEISYUTUSYANAME", "unknown"),
             "edinet_code": doc.get("EDINET_CD", "unknown")
         }
-        def extract_dates_from_shorui_name(shorui_name):
+        def extract_dates_from_type_name(type_name):
             # Cerca pattern tipo (YYYY.MM.DD-YYYY.MM.DD)
-            match = re.search(r"(\d{4}\.\d{2}\.\d{2})-(\d{4}\.\d{2}\.\d{2})", shorui_name)
+            match = re.search(r"(\d{4}\.\d{2}\.\d{2})-(\d{4}\.\d{2}\.\d{2})", type_name)
             if match:
                 return match.group(1), match.group(2)
             return None, None
 
-        shorui_name = doc.get("SHORUI_NAME", "")
-        period_start, period_end = extract_dates_from_shorui_name(shorui_name)
+        type_name = doc.get("SHORUI_NAME", "")
+        period_start, period_end = extract_dates_from_type_name(type_name)
         metadata["period_start"] = period_start 
         metadata["period_end"] = period_end 
             
