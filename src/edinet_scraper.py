@@ -1,4 +1,3 @@
-
 # Import standard
 import os
 import time
@@ -10,6 +9,8 @@ from tqdm import tqdm
 
 # Import locali
 import codeList_utils
+from csv_worker import download_csv_worker
+from pdf_worker import download_pdf_worker
 
 # Path portabili
 DATA_DIR = os.path.join(os.path.dirname(__file__),".." ,"data") 
@@ -53,6 +54,7 @@ def process_tasks_from_file(tasks_file="../tasks.json", max_files=300, max_worke
             with open(tasks_path, "w", encoding="utf-8") as f:
                 json.dump(tasks, f, indent=2)
     print("\n--- Tutti i task sono stati processati ---")
+    
 def search_files_by_company(edinet_code, session=None):
     """
     Searches for files for a specific company (edinet_code).
@@ -185,103 +187,6 @@ import os
 from tqdm import tqdm
 import time
 
-def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
-    """
-    Worker function for downloading a single PDF document.
-    Skips if SYORUI_KANRI_NO_ENCRYPT is missing.
-    """
-    if not doc.get("SYORUI_KANRI_NO_ENCRYPT"):
-        # Documento senza PDF
-        return False, "No PDF for this document"
-    
-    tipo_documento = doc.get("SYORUI_SB_CD_ID", "unknown")
-    company_name = doc.get("KAISHA_MEI", "unknown")
-    save_dir = os.path.join(".", "data", edinet_code, "pdf", tipo_documento)
-    # Define save_dir relative to the current file (__file__)
-    save_dir = os.path.join(os.path.dirname(__file__), "..", "data", edinet_code, "pdf", tipo_documento)
-    # Crea la directory se non esiste
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir, exist_ok=True)
-    
-    kanri_no_encrypt = doc.get("SYORUI_KANRI_NO_ENCRYPT")
-    if not kanri_no_encrypt:
-        return False, "Missing SYORUI_KANRI_NO_ENCRYPT"
-
-    hsh_list = [
-        tokens.get("gx_hash_name"),
-        tokens.get("gx_hash_desc")
-    ]
-    url = "https://disclosure2.edinet-fsa.go.jp/WEEE0040.aspx"
-    headers = {
-        "ajax_security_token": tokens["ajax_token"],
-        "x-gxauth-token": tokens["gx_auth_token"],
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Origin": "https://disclosure2.edinet-fsa.go.jp",
-        "Referer": url,
-        "X-Requested-With": "XMLHttpRequest",
-        "Accept": "*/*",
-        "Accept-Encoding": "gzip, deflate, br, zstd",
-        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7,ja;q=0.6",
-        "gxajaxrequest": "1"
-    }
-    payload_pdf = {
-        "MPage": False,
-        "cmpCtx": "",
-        "parms": [
-            "WEEE0040",
-            "Simple document search",
-            kanri_no_encrypt,
-            "",
-            "",
-            "",
-            "",
-            [],
-        ],
-        "hsh": [
-            {"hsh": hsh_list[0], "row": ""},
-            {"hsh": hsh_list[1], "row": ""}
-        ],
-        "objClass": "weee0040",
-        "pkgName": "GeneXus.Programs",
-        "events": ["'DOBTN_PDF'"],
-        "grids": {}
-    }
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            response_pdf = session.post(url, headers=headers, json=payload_pdf)
-            if response_pdf.status_code != 200:
-                raise Exception("Error POST PDF")
-            data_pdf = response_pdf.json()
-            pdf_url = data_pdf.get("gxProps", [{}])[0].get("PDFDISP", {}).get("Target")
-            if not pdf_url:
-                raise Exception("PDF URL not found")
-            pdf_response = session.get(pdf_url)
-            import re
-            def extract_pdf_url_from_html(html):
-                match = re.search(r"pdfView\('([^']+\.pdf[^\']*)'\)", html)
-                if match:
-                    return match.group(1)
-                return None
-            pdf_url_real = extract_pdf_url_from_html(pdf_response.text)
-            if not pdf_url_real:
-                raise Exception("Real PDF URL not found")
-            pdf_file_response = session.get(pdf_url_real)
-            if pdf_file_response.status_code == 200 and pdf_file_response.content:
-                codice_file = doc.get("SHORUI_KANRI_NO", "unknown")
-                filename = os.path.join(save_dir, f"{codice_file}.pdf")
-                with open(filename, "wb") as f:
-                    f.write(pdf_file_response.content)
-                # Restituisco tuple come per i CSV
-                return True, (filename, tipo_documento, company_name)
-            else:
-                raise Exception("PDF download failed")
-        except Exception as e:
-            if attempt < max_retries:
-                time.sleep(2)  # Wait before retrying
-            else:
-                return False, f"Attempt {attempt}: {str(e)}"
 
 def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_workers=32):
     """
@@ -293,27 +198,25 @@ def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_work
     pdf_downloaded = 0
     pdf_not_found = 0
     errors = 0
-    pdf_metadata = []
+    batch_metadata = []
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor, tqdm(total=total, desc="Download PDF", unit="file") as pbar:
+    from tqdm import tqdm
+    with ThreadPoolExecutor(max_workers=max_workers) as executor, tqdm(total=total, desc="Download PDF", unit="file", position=0) as pbar:
         futures = []
         for idx, doc in enumerate(results):
             if idx >= max_files:
                 break
             futures.append(executor.submit(download_pdf_worker, doc, edinet_code, session, tokens))
+            #print(doc) 
         for idx, future in enumerate(as_completed(futures)):
-            success, info = future.result()
-            if success and isinstance(info, tuple):
+            success, info_and_metadata = future.result()
+            if success and isinstance(info_and_metadata, tuple):
                 pdf_downloaded += 1
-                pdf_metadata.append({
-                    "edinet_code": edinet_code,
-                    "file_type": "pdf",
-                    "file_path": info[0],
-                    "doc": results[idx] if idx < len(results) else {},
-                    "document_type": info[1],
-                    "company_name": info[2]
-                })
-            elif info in ("No PDF for this document", "Missing SYORUI_KANRI_NO_ENCRYPT"):
+                #import pprint
+                #pprint.pprint(info_and_metadata[1])
+                batch_metadata.append(info_and_metadata[1])
+                
+            elif info_and_metadata[0] in ("not_found"):
                 pdf_not_found += 1
             else:
                 errors += 1
@@ -327,95 +230,17 @@ def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_work
     print(f"Errors: {errors}")
     print(f"Total time: {elapsed:.2f} seconds")
     
-    return {
+    stats = {
         "pdf_downloaded": pdf_downloaded,
         "pdf_not_found": pdf_not_found,
         "pdf_errors": errors,
-        "pdf_time": elapsed,
-        "pdf_metadata": pdf_metadata
+        "pdf_time": elapsed
     }
+    
+    return stats, batch_metadata    
 
 import re
 
-def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
-    if not doc.get("SYORUI_KANRI_NO_ENCRYPT"):
-        # Documento senza CSV
-        return True, "not_found"
-
-    document_type = doc.get("SYORUI_SB_CD_ID", "unknown")
-    company_name = doc.get("KAISHA_MEI", "unknown")
-    save_dir = os.path.join(os.path.dirname(__file__), "..", "data", edinet_code, "csv", document_type)
-    os.makedirs(save_dir, exist_ok=True)
-    kanri_no_encrypt = doc.get("SYORUI_KANRI_NO_ENCRYPT")
-    if not kanri_no_encrypt:
-        return True, "not_found"
-
-    hsh_list = [
-        tokens.get("gx_hash_name"),
-        tokens.get("gx_hash_desc")
-    ]
-    url = "https://disclosure2.edinet-fsa.go.jp/WEEE0040.aspx"
-    headers = {
-        "ajax_security_token": tokens["ajax_token"],
-        "x-gxauth-token": tokens["gx_auth_token"],
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Origin": "https://disclosure2.edinet-fsa.go.jp",
-        "Referer": url,
-        "X-Requested-With": "XMLHttpRequest",
-        "Accept": "*/*",
-        "Accept-Encoding": "gzip, deflate, br, zstd",
-        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7,ja;q=0.6",
-        "gxajaxrequest": "1"
-    }
-    payload_csv = {
-        "MPage": False,
-        "cmpCtx": "",
-        "parms": [
-            "WEEE0040",
-            "Simple document search",
-            kanri_no_encrypt,
-            "",
-            "",
-            "",
-            "",
-            [],
-        ],
-        "hsh": [
-            {"hsh": hsh_list[0], "row": ""},
-            {"hsh": hsh_list[1], "row": ""}
-        ],
-        "objClass": "weee0040",
-        "pkgName": "GeneXus.Programs",
-        "events": ["'DOBTN_CSV'"],
-        "grids": {}
-    }
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            response_csv = session.post(url, headers=headers, json=payload_csv)
-            if response_csv.status_code != 200:
-                raise Exception("Error POST CSV")
-            data_csv = response_csv.json()
-            dl_script = data_csv.get("gxProps", [{}])[0].get("DLSCRIPT", {}).get("Caption", "")
-            import re
-            match = re.search(r'data:;base64,([A-Za-z0-9+/=]+)', dl_script)
-            if not match:
-                # CSV non trovato, ma non è errore: non fare retry
-                return True, "not_found"
-            import base64
-            base64_data = match.group(1)
-            file_data = base64.b64decode(base64_data)
-            codice_file = doc.get("SHORUI_KANRI_NO", "unknown")
-            filename = os.path.join(save_dir, f"{codice_file}.zip")
-            with open(filename, "wb") as f:
-                f.write(file_data)
-            return True, (filename, document_type, company_name)
-        except Exception as e:
-            if attempt < max_retries:
-                time.sleep(2)
-            else:
-                return False, f"Attempt {attempt}: {str(e)}"
 
 def download_csvs(results, edinet_code, session, tokens, max_files=300, max_workers=16):
     """
@@ -426,9 +251,10 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
     csv_downloaded = 0
     csv_not_found = 0
     errors = 0
-    csv_metadata = []
+    batch_metadata = []
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor, tqdm(total=total, desc="Download CSV", unit="file") as pbar:
+    from tqdm import tqdm
+    with ThreadPoolExecutor(max_workers=max_workers) as executor, tqdm(total=total, desc="Download CSV", unit="file", position=1) as pbar:
         futures = []
         for idx, doc in enumerate(results):
             if idx >= max_files:
@@ -436,9 +262,9 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
             futures.append(executor.submit(download_csv_worker, doc, edinet_code, session, tokens))
         for idx, future in enumerate(as_completed(futures)):
             success, info = future.result()
-            if success and isinstance(info, str) and info != "not_found":
+            if success and isinstance(info, str):
                 csv_downloaded += 1
-                csv_metadata.append({
+                batch_metadata.append({
                     "edinet_code": edinet_code,
                     "file_type": "csv",
                     "file_path": info[0],
@@ -446,7 +272,7 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
                     "document_type": info[1],
                     "company_name": info[2]
                 })
-            elif info == "not_found" or info == "Missing SYORUI_KANRI_NO_ENCRYPT":
+            elif info == "not_found" :
                 csv_not_found += 1
             else:
                 errors += 1
@@ -459,14 +285,15 @@ def download_csvs(results, edinet_code, session, tokens, max_files=300, max_work
     print(f"CSVs not found: {csv_not_found}")
     print(f"Errors: {errors}")
     print(f"Total time: {elapsed:.2f} seconds")
-    
-    return {
+
+    stats = {
         "csv_downloaded": csv_downloaded,
         "csv_not_found": csv_not_found,
         "csv_errors": errors,
-        "csv_time": elapsed,
-        "csv_metadata": csv_metadata
+        "csv_time": elapsed
     }
+
+    return stats, batch_metadata
 
 def get_session_tokens():
     """
@@ -481,7 +308,6 @@ def get_session_tokens():
     session = requests.Session()
     max_retries = 5
     for attempt in range(1, max_retries + 1):
-        resp = session.get(url)
         response = session.get(url)
         soup = BeautifulSoup(response.text, "html.parser")
         gxstate_input = soup.find("input", {"name": "GXState"})
@@ -508,9 +334,6 @@ def get_session_tokens():
                 print(response.text[:1000])  # Stampa i primi 1000 caratteri per debug
                 raise RuntimeError("GXState non trovato nella pagina iniziale")
 
-
-
-
 def extract_pdf_url_from_html(html):
     """
     Extracts the direct PDF URL from HTML, searching for the pdfView('...') call.
@@ -521,28 +344,27 @@ def extract_pdf_url_from_html(html):
         return match.group(1)
     return None
 
-
-
-def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
-    """
-    Esegue ricerca e download PDF/CSV per una singola azienda.
-    """
+"""
+def extract_all_for_company_parallel_version(edinet_code, max_files=300, max_workers=16):
+    
+    #Esegue ricerca e download PDF/CSV per una singola azienda e salva i metadati sul db.
+  
     session, tokens = get_session_tokens()
     risultati, tokens = search_files_by_company(edinet_code, session=session)
     print(f"Totale risultati per {edinet_code}: {len(risultati)}")
 
     # Scarica PDF e CSV in parallelo
     import threading
-    
     import db_utils
     pdf_stats = {}
     csv_stats = {}
     def pdf_job():
         nonlocal pdf_stats
-        pdf_stats = download_pdfs(risultati, edinet_code, session, tokens, max_files, max_workers*2)
+        pdf_stats = download_pdfs(risultati, edinet_code, session, tokens, max_files, max_workers)
     def csv_job():
         nonlocal csv_stats
         csv_stats = download_csvs(risultati, edinet_code, session, tokens, max_files, max_workers)
+        
     t_pdf = threading.Thread(target=pdf_job)
     t_csv = threading.Thread(target=csv_job)
     t_pdf.start()
@@ -569,12 +391,53 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
         "csv_files": csv_stats.get("csv_metadata", [])
     }
     return stats_metadata
-    
+"""
+
+def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
+    """
+    Versione sequenziale: scarica prima PDF, poi CSV, e salva i metadati sul db.
+    """
+    session, tokens = get_session_tokens()
+    risultati, _ = search_files_by_company(edinet_code, session=session)
+    print(f"Totale risultati per {edinet_code}: {len(risultati)}")
+
+    import db_utils
+    # Scarica PDF
+    pdf_stats ,pdf_metadata = download_pdfs(risultati, edinet_code, session, tokens, max_files, max_workers)
+    # Scarica CSV
+    csv_stats ,csv_metadata = download_csvs(risultati, edinet_code, session, tokens, max_files, max_workers)
+    # Salva i metadati su MongoDB
+    # Preparo dizionario per batch insert
+    all_metadata = pdf_metadata + csv_metadata
+        
+    from pprint import pprint
+    pprint(all_metadata)
+        
+    db_utils.save_company_files_from_dict(all_metadata)
+    # Unisco statistiche e metadati
+    stats_per_company = {
+        "pdf_downloaded": pdf_stats.get("pdf_downloaded", 0),
+        "pdf_not_found": pdf_stats.get("pdf_not_found", 0),
+        "pdf_errors": pdf_stats.get("pdf_errors", 0),
+        "pdf_time": pdf_stats.get("pdf_time", 0),
+        "csv_downloaded": csv_stats.get("csv_downloaded", 0),
+        "csv_not_found": csv_stats.get("csv_not_found", 0),
+        "csv_errors": csv_stats.get("csv_errors", 0),
+        "csv_time": csv_stats.get("csv_time", 0)
+    }
+    return stats_per_company
+
+
 if __name__ == "__main__":
     try:
         # Esegui la pulizia del CSV e schedula i task a batch
+        """
         codeList_utils.get_codeList()
         codeList_utils.clean_CodeList()
         schedule_tasks_from_csv(batch_size=10)
+        """
+        extract_all_for_company("E02166", max_files=5, max_workers=16)
+    
+        
     except KeyboardInterrupt:
         print("Exit....")
