@@ -111,6 +111,16 @@ def get_codeList():
     print("[get_codeList] ERRORE: Nessun file CSV trovato nello ZIP!")
     raise Exception("Nessun file CSV trovato nello ZIP")
 
+from db_utils import populate_companies_collection
+
+def updateCodeList():
+    code_list_path = os.path.join(__file__,"..","data", 'Edinet_codeList.csv')
+    if not os.path.exists(code_list_path):
+        print("[updateCodeList] Il file Edinet_codeList.csv non esiste.")
+    print("[updateCodeList] Popolo la collection delle companies...")
+    populate_companies_collection(code_list_path)
+
 if __name__ == "__main__":
     get_codeList()
     clean_CodeList() 
+    updateCodeList()

@@ -3,9 +3,7 @@ import os
 import time
 import json
 import re
-
 import pandas as pd
-from tqdm import tqdm
 
 # Import locali
 import codeList_utils
@@ -184,7 +182,6 @@ def search_files_by_company(edinet_code, session=None):
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
-from tqdm import tqdm
 import time
 
 
