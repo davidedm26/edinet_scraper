@@ -16,7 +16,7 @@ def clean_CodeList(input_path=None, output_path=None):
     if output_path is None:
         output_path = os.path.join(base_dir, 'Edinet_codeList.csv')
     df = pd.read_csv(input_path, skiprows=1, encoding="cp932")
-    print(df.iloc[:, 2].unique())
+    #print(df.iloc[:, 2].unique())
     #print("Colonne disponibili:", df.columns.tolist())
     # Seleziona le colonne per posizione: ad esempio 0, 1, 2
     df = df.iloc[:, [0, 2, 7]]
@@ -111,16 +111,14 @@ def get_codeList():
     print("[get_codeList] ERRORE: Nessun file CSV trovato nello ZIP!")
     raise Exception("Nessun file CSV trovato nello ZIP")
 
-from db_utils import populate_companies_collection
 
-def updateCodeList():
-    code_list_path = os.path.join(__file__,"..","data", 'Edinet_codeList.csv')
-    if not os.path.exists(code_list_path):
-        print("[updateCodeList] Il file Edinet_codeList.csv non esiste.")
-    print("[updateCodeList] Popolo la collection delle companies...")
-    populate_companies_collection(code_list_path)
+
+def build_codeList_file():
+    get_codeList()
+    clean_CodeList() 
+    
 
 if __name__ == "__main__":
     get_codeList()
     clean_CodeList() 
-    updateCodeList()
+    #updateCodeList()

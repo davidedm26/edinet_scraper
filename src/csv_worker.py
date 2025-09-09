@@ -14,7 +14,10 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
 
     document_type = doc.get("SYORUI_SB_CD_ID", "unknown") # Document Type Code
     
-    save_dir = os.path.join(os.path.dirname(__file__), "..", "data", edinet_code, "csv", document_type)
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    save_dir = os.path.join(project_root, "data", edinet_code, "csv", document_type)
+    #print(f"CSV save_dir: {save_dir}")
+    
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
         

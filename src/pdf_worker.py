@@ -16,7 +16,10 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
     if not doc.get("SYORUI_KANRI_NO_ENCRYPT"):
         return False, "No PDF for this document"
 
-    save_dir = os.path.join(os.path.dirname(__file__), "..", "data", edinet_code, "pdf", document_type)
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    save_dir = os.path.join(project_root, "data", edinet_code, "pdf", document_type)
+    
+    #print(f"PDF save_dir: {save_dir}")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
     kanri_no_encrypt = doc.get("SYORUI_KANRI_NO_ENCRYPT")
@@ -92,6 +95,7 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
                     return False, ("not_found",None)
                 
                 filename = os.path.join(save_dir, f"{document_name}.pdf")
+                
                 with open(filename, "wb") as f:
                     f.write(pdf_file_response.content)
                     

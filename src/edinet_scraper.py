@@ -374,11 +374,11 @@ if __name__ == "__main__":
     try:
         # Esegui la pulizia del CSV e schedula i task a batch
         
-        codeList_utils.get_codeList()
-        codeList_utils.clean_CodeList()
-        schedule_tasks_from_codeList(batch_size=10)
+        #codeList_utils.get_codeList()
+        #codeList_utils.clean_CodeList()
+        #schedule_tasks_from_codeList(batch_size=10)
         
-        #extract_all_for_company("E02166", max_files=5, max_workers=16)
+        extract_all_for_company("E02166", max_files=5, max_workers=16)
     
         
     except KeyboardInterrupt:

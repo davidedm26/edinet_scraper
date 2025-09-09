@@ -1,5 +1,6 @@
 from db_utils import populate_companies_collection, connect_mongo
 from edinet_scraper import extract_all_for_company
+from codeList_utils import build_codeList_file
 import os
 
 DATA_DIR = os.path.join(os.path.dirname(__file__),".." ,"data") 
@@ -23,6 +24,7 @@ def process_pending_companies():
 
 def run_pipeline():
     # Popola la collection delle aziende (solo se serve)
+    build_codeList_file() #Download and clean the codeList file
     populate_companies_collection(os.path.join(DATA_DIR, "Edinet_codeList.csv"))
     process_pending_companies()
 
