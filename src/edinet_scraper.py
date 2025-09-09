@@ -16,7 +16,7 @@ from pdf_worker import download_pdf_worker
 DATA_DIR = os.path.join(os.path.dirname(__file__),".." ,"data") 
 output_csv_path = os.path.join(DATA_DIR, "Edinet_codeList.csv")
 
-def schedule_tasks_from_csv(csv_path=output_csv_path, batch_size=10):
+def schedule_tasks_from_codeList(csv_path=output_csv_path, batch_size=10):
     """
     Legge i codici dal CSV e processa i task in batch da batch_size.
     """
@@ -29,7 +29,7 @@ def schedule_tasks_from_csv(csv_path=output_csv_path, batch_size=10):
         print(f"\nBatch {start//batch_size + 1}: {batch}")
         for edinet_code in batch:
             try:
-                extract_all_for_company(edinet_code)
+                extract_all_for_company(edinet_code, max_workers=32)
             except Exception as e:
                 print(f"Errore per {edinet_code}: {e}")
                 
@@ -337,54 +337,6 @@ def extract_pdf_url_from_html(html):
         return match.group(1)
     return None
 
-"""
-def extract_all_for_company_parallel_version(edinet_code, max_files=300, max_workers=16):
-    
-    #Esegue ricerca e download PDF/CSV per una singola azienda e salva i metadati sul db.
-  
-    session, tokens = get_session_tokens()
-    risultati, tokens = search_files_by_company(edinet_code, session=session)
-    print(f"Totale risultati per {edinet_code}: {len(risultati)}")
-
-    # Scarica PDF e CSV in parallelo
-    import threading
-    import db_utils
-    pdf_stats = {}
-    csv_stats = {}
-    def pdf_job():
-        nonlocal pdf_stats
-        pdf_stats = download_pdfs(risultati, edinet_code, session, tokens, max_files, max_workers)
-    def csv_job():
-        nonlocal csv_stats
-        csv_stats = download_csvs(risultati, edinet_code, session, tokens, max_files, max_workers)
-        
-    t_pdf = threading.Thread(target=pdf_job)
-    t_csv = threading.Thread(target=csv_job)
-    t_pdf.start()
-    t_csv.start()
-    t_pdf.join()
-    t_csv.join()
-    # Salva i metadati su MongoDB
-    db = db_utils.connect_mongo()
-    for file in pdf_stats.get("pdf_metadata", []):
-        db_utils.insert_file_metadata(db, file["edinet_code"], file["file_type"], file["file_path"], file["doc"])
-    for file in csv_stats.get("csv_metadata", []):
-        db_utils.insert_file_metadata(db, file["edinet_code"], file["file_type"], file["file_path"], file["doc"])
-    # Unisco statistiche e metadati
-    stats_metadata = {
-        "pdf_downloaded": pdf_stats.get("pdf_downloaded", 0),
-        "pdf_not_found": pdf_stats.get("pdf_not_found", 0),
-        "pdf_errors": pdf_stats.get("pdf_errors", 0),
-        "pdf_time": pdf_stats.get("pdf_time", 0),
-        "csv_downloaded": csv_stats.get("csv_downloaded", 0),
-        "csv_not_found": csv_stats.get("csv_not_found", 0),
-        "csv_errors": csv_stats.get("csv_errors", 0),
-        "csv_time": csv_stats.get("csv_time", 0),
-        "pdf_files": pdf_stats.get("pdf_metadata", []),
-        "csv_files": csv_stats.get("csv_metadata", [])
-    }
-    return stats_metadata
-"""
 
 def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     """
@@ -403,8 +355,8 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     # Preparo dizionario per batch insert
     all_metadata = pdf_metadata + csv_metadata
         
-    from pprint import pprint
-    pprint(all_metadata)
+    #from pprint import pprint
+    #pprint(all_metadata)
         
     db_utils.save_company_files_from_dict(all_metadata)
     # Unisco statistiche e metadati
@@ -424,12 +376,12 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
 if __name__ == "__main__":
     try:
         # Esegui la pulizia del CSV e schedula i task a batch
-        """
+        
         codeList_utils.get_codeList()
         codeList_utils.clean_CodeList()
-        schedule_tasks_from_csv(batch_size=10)
-        """
-        extract_all_for_company("E02166", max_files=5, max_workers=16)
+        schedule_tasks_from_codeList(batch_size=10)
+        
+        #extract_all_for_company("E02166", max_files=5, max_workers=16)
     
         
     except KeyboardInterrupt:
