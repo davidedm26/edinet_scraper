@@ -86,11 +86,19 @@ def populate_companies_collection(csv_path):
         except Exception as e:
             print(f"Error updating companies: {e}")
 
-
+def clear_db():
+    """
+    Svuota le collection 'companies' e 'files' dal database MongoDB.
+    """
+    db = connect_mongo()
+    db["companies"].delete_many({})
+    db["files"].delete_many({})
+    print("Le collection 'companies' e 'files' sono state svuotate.")
 
 
 if __name__ == "__main__":
-    sample_files = find_company_files("E02166")
-    populate_companies_collection("./data/Edinet_codeList.csv")
+    #sample_files = find_company_files("E02166")
+    #populate_companies_collection("./data/Edinet_codeList.csv")
     #for f in sample_files:
     #    print(f)
+    clear_db()

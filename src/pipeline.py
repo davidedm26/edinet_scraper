@@ -1,6 +1,6 @@
-from db_utils import populate_companies_collection, connect_mongo
-from edinet_scraper import extract_all_for_company
-from codeList_utils import build_codeList_file
+from utils.db_utils import populate_companies_collection, connect_mongo
+from utils.scraper import extract_all_for_company
+from utils.codeList_utils import build_codeList_file
 import os
 
 DATA_DIR = os.path.join(os.path.dirname(__file__),".." ,"data") 
@@ -23,10 +23,15 @@ def process_pending_companies():
             )
 
 def run_pipeline():
-    # Popola la collection delle aziende (solo se serve)
-    build_codeList_file() #Download and clean the codeList file
-    populate_companies_collection(os.path.join(DATA_DIR, "Edinet_codeList.csv"))
-    process_pending_companies()
+    try:
+        # Populate the companies collection (only if needed)
+        build_codeList_file()  # Download and clean the codeList file
+        populate_companies_collection(os.path.join(DATA_DIR, "Edinet_codeList.csv"))
+        process_pending_companies()
+    except KeyboardInterrupt:
+        print("Keyboard interruption detected. Exiting the program.")
+    
 
 if __name__ == "__main__":
+    
     run_pipeline()

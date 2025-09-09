@@ -6,9 +6,9 @@ import re
 import pandas as pd
 
 # Import locali
-import codeList_utils
-from csv_worker import download_csv_worker
-from pdf_worker import download_pdf_worker
+import utils.codeList_utils as codeList_utils   
+from workers.csv_worker import download_csv_worker
+from workers.pdf_worker import download_pdf_worker
 
 # Path portabili
 DATA_DIR = os.path.join(os.path.dirname(__file__),".." ,"data") 
@@ -343,7 +343,7 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     risultati, _ = search_files_by_company(edinet_code, session=session)
     print(f"Totale risultati per {edinet_code}: {len(risultati)}")
 
-    import db_utils
+    import utils.db_utils as db_utils
     # Scarica PDF
     pdf_stats ,pdf_metadata = download_pdfs(risultati, edinet_code, session, tokens, max_files, max_workers)
     # Scarica CSV
@@ -377,7 +377,8 @@ if __name__ == "__main__":
         #codeList_utils.get_codeList()
         #codeList_utils.clean_CodeList()
         #schedule_tasks_from_codeList(batch_size=10)
-        
+        from utils.db_utils import clear_db
+        clear_db()
         extract_all_for_company("E02166", max_files=5, max_workers=16)
     
         
