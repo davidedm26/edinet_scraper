@@ -5,10 +5,13 @@ from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
 
 def connect_mongo(uri="mongodb://localhost:27017/", db_name="edinet"):
-    client = MongoClient(uri)
-    db = client[db_name]
     # Crea indice unico su document_name+company_name se non esiste
     from pymongo.errors import PyMongoError
+    import os
+    mongo_uri = os.environ.get("MONGO_URI", uri)
+    client = MongoClient(mongo_uri)
+    db = client[db_name]
+    # Crea indice unico su document_name+company_name se non esiste
     try:
         db["files"].create_index(
             [("document_name", 1), ("file_type", 1), ("edinet_code", 1)],
