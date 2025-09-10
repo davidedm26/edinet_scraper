@@ -1,4 +1,4 @@
-from utils.db_utils import populate_companies_collection, connect_mongo
+from utils.db_utils import populate_companies_collection, connect_mongo, clear_db
 from utils.scraper import extract_all_for_company
 from utils.codeList_utils import build_codeList_file
 import os
@@ -22,9 +22,12 @@ def process_pending_companies():
                 {"$set": {"status": "error", "error": str(e)}}
             )
 
-def run_pipeline():
+def run_pipeline( START_FROM_ZERO=False ):
     try:
         # Populate the companies collection (only if needed)
+        if (START_FROM_ZERO == True):
+            clear_db()
+            
         build_codeList_file()  # Download and clean the codeList file
         populate_companies_collection(os.path.join(DATA_DIR, "Edinet_codeList.csv"))
         process_pending_companies()
@@ -34,4 +37,4 @@ def run_pipeline():
 
 if __name__ == "__main__":
     
-    run_pipeline()
+    run_pipeline(True)

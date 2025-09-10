@@ -85,7 +85,7 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
                     f.write(file_data)
                     
                 from workers.pdf_worker import generate_MetaData
-                metadata = generate_MetaData(doc, relative_path)
+                metadata = generate_MetaData(doc, relative_path, "csv")
                 return True, (None, metadata)
             
             except Exception as file_exc:

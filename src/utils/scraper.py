@@ -3,10 +3,12 @@ import os
 import time
 import json
 import re
-import pandas as pd
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # Import locali
-import utils.codeList_utils as codeList_utils   
 from workers.csv_worker import download_csv_worker
 from workers.pdf_worker import download_pdf_worker
 
@@ -14,44 +16,7 @@ from workers.pdf_worker import download_pdf_worker
 DATA_DIR = os.path.join(os.path.dirname(__file__),".." ,"data") 
 output_csv_path = os.path.join(DATA_DIR, "Edinet_codeList.csv")
 
-def schedule_tasks_from_codeList(csv_path=output_csv_path, batch_size=10):
-    """
-    Legge i codici dal CSV e processa i task in batch da batch_size.
-    """
-    df = pd.read_csv(csv_path, encoding="utf-8-sig")
-    codes = df.iloc[:, 0].tolist()  # Prima colonna: Edinet Code
-    total = len(codes)
-    print(f"Totale aziende da processare: {total}")
-    for start in range(0, total, batch_size):
-        batch = codes[start:start+batch_size]
-        print(f"\nBatch {start//batch_size + 1}: {batch}")
-        for edinet_code in batch:
-            try:
-                extract_all_for_company(edinet_code, max_workers=32)
-            except Exception as e:
-                print(f"Errore per {edinet_code}: {e}")
-                
-# Funzione per processare i task dal file tasks.json
-def process_tasks_from_file(tasks_file="../tasks.json", max_files=300, max_workers=32):
-    tasks_path = os.path.join(os.path.dirname(__file__), tasks_file)
-    with open(tasks_path, "r", encoding="utf-8") as f:
-        tasks = json.load(f)
-    for task in tasks:
-        if task.get("status") == "pending":
-            edinet_code = task["edinet_code"]
-            print(f"\n--- Processing {edinet_code} ---")
-            try:
-                stats = extract_all_for_company(edinet_code, max_files=max_files, max_workers=max_workers)
-                task["status"] = "done"
-                task["stats"] = stats
-            except Exception as e:
-                print(f"Errore per {edinet_code}: {e}")
-                task["status"] = "error"
-                task["stats"] = {"error": str(e)}
-            # Salva lo stato aggiornato dopo ogni task
-            with open(tasks_path, "w", encoding="utf-8") as f:
-                json.dump(tasks, f, indent=2)
-    print("\n--- Tutti i task sono stati processati ---")
+     
     
 def search_files_by_company(edinet_code, session=None):
     """
@@ -180,10 +145,6 @@ def search_files_by_company(edinet_code, session=None):
         all_results.extend(results)
     return all_results, tokens
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import os
-import time
-
 
 def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_workers=32):
     """
@@ -235,8 +196,6 @@ def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_work
     }
     
     return stats, batch_metadata    
-
-import re
 
 
 def download_csvs(results, edinet_code, session, tokens, max_files=300, max_workers=16):
@@ -333,7 +292,6 @@ def extract_pdf_url_from_html(html):
     if match:
         return match.group(1)
     return None
-
 
 def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     """

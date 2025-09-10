@@ -104,7 +104,7 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
                 with open(filename, "wb") as f:
                     f.write(pdf_file_response.content)
                     
-                metadata = generate_MetaData(doc, relative_path)
+                metadata = generate_MetaData(doc, relative_path, "pdf")
                 
                 return True, (None, metadata)
             else:
@@ -116,11 +116,11 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
                 return False, (f"Attempt {attempt}: {str(e)}",None)
 
 
-def generate_MetaData(doc, relative_path):
+def generate_MetaData(doc, relative_path, file_type):
     try:
         metadata = {
             "file_path": relative_path,
-            "file_type": "pdf",
+            "file_type": file_type,
             "document_name": doc.get("SHORUI_KANRI_NO", "unknown"),
             "document_type_code": doc.get("SYORUI_SB_CD_ID", "unknown"),
             "document_type_name": doc.get("SHORUI_NAME", "unknown"),
