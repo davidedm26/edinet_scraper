@@ -1,4 +1,4 @@
-# Import standard
+"""Standard imports"""
 import os
 import time
 import json
@@ -8,15 +8,13 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-# Import locali
+"""Local imports"""
 from workers.csv_worker import download_csv_worker
 from workers.pdf_worker import download_pdf_worker
 
-# Path portabili
+"""Portable paths"""
 DATA_DIR = os.path.join(os.path.dirname(__file__),".." ,"data") 
 output_csv_path = os.path.join(DATA_DIR, "Edinet_codeList.csv")
-
-     
     
 def search_files_by_company(edinet_code, session=None):
     """
@@ -29,7 +27,7 @@ def search_files_by_company(edinet_code, session=None):
     else:
         _, tokens = get_session_tokens()
 
-    url = "https://disclosure2.edinet-fsa.go.jp/WEEE0040.aspx"
+    search_page_url = "https://disclosure2.edinet-fsa.go.jp/WEEE0040.aspx"
 
     # Set request headers with required tokens and user agent
     headers = {
@@ -38,7 +36,7 @@ def search_files_by_company(edinet_code, session=None):
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Origin": "https://disclosure2.edinet-fsa.go.jp",
-        "Referer": url,
+        "Referer": search_page_url,
         "X-Requested-With" : "XMLHttpRequest",
         "Accept": "*/*",
         "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -48,23 +46,58 @@ def search_files_by_company(edinet_code, session=None):
 
     # Main POST request payload for searching documents
     payload = {
-        "MPage":False,
-        "cmpCtx":"",
-        "parms":[[],{"SEARCH_KEY_WORD": edinet_code,"CONTAIN_FUND":False,"SYORUI_SYUBETU":"120,130,140,150,160,170,350,360,010,020,030,040,050,060,070,080,090,100,110,135,136,200,210,220,230,235,236,240,250,260,270,280,290,300,310,320,330,340,370,380,180,190,","KESSAN_NEN":"","KESSAN_TUKI":"","TEISYUTU_FROM":"19000101","TEISYUTU_TO":"20250904","FLS":True,"LPR":True,"RPR":True,"OTH":True,"TEISYUTU_KIKAN":7},"WEEE0040","Simple document search",2,1,100,{"SaitoKubun":"","SennimotoId":"WEEE0040"},"1",False,"[]",0],
-        "events":["T(O(14,'WEEE0030_EVENTS'),72).BACKSETPARAMETER"],
-        "grids":{},
-        "hsh":[
+        "MPage": False,
+        "cmpCtx": "",
+        "parms": [
+            [],
+            {
+                "SEARCH_KEY_WORD": edinet_code,
+                "CONTAIN_FUND": False,
+                "SYORUI_SYUBETU": (
+                    "120,130,140,150,160,170,350,360,010,020,030,040,050,060,070,080,090,100,"
+                    "110,135,136,200,210,220,230,235,236,240,250,260,270,280,290,300,310,320,"
+                    "330,340,370,380,180,190,"
+                ),
+                "KESSAN_NEN": "",
+                "KESSAN_TUKI": "",
+                "TEISYUTU_FROM": "19000101",
+                "TEISYUTU_TO": "20250904",
+                "FLS": True,
+                "LPR": True,
+                "RPR": True,
+                "OTH": True,
+                "TEISYUTU_KIKAN": 7
+            },
+            "WEEE0040",
+            "Simple document search",
+            2,
+            1,
+            100,
+            {
+                "SaitoKubun": "",
+                "SennimotoId": "WEEE0040"
+            },
+            "1",
+            False,
+            "[]",
+            0
+        ],
+        "events": [
+            "T(O(14,'WEEE0030_EVENTS'),72).BACKSETPARAMETER"
+        ],
+        "grids": {},
+        "hsh": [
             {"hsh": tokens["gx_hash_name"], "row": ""},
             {"hsh": tokens["gx_hash_desc"], "row": ""},
             {"hsh": tokens["gxhash_vW_PAGEMAX"], "row": ""},
             {"hsh": tokens["gxhash_vW_LANGUAGE"], "row": ""}
         ],
-        "objClass":"weee0040",
-        "pkgName":"GeneXus.Programs"
+        "objClass": "weee0040",
+        "pkgName": "GeneXus.Programs"
     }
 
     # Send the initial POST request
-    response = session.post(url, headers=headers, json=payload)
+    response = session.post(search_page_url, headers=headers, json=payload)
     data = response.json()
     total_results = int(data.get("gxValues", [{}])[0].get("AV84W_TotalCount", 0))
     results_per_page = 100
@@ -137,7 +170,7 @@ def search_files_by_company(edinet_code, session=None):
             "grids": {}
         }
         # Send POST request for each page
-        response_page = session.post(url, headers=headers, json=payload_pagination)
+        response_page = session.post(search_page_url, headers=headers, json=payload_pagination)
         data_page = response_page.json()
         results_json = data_page.get("gxValues", [{}])[0].get("AV113W_RESULT_LIST_JSON", "[]")
         results = json.loads(results_json)
@@ -274,14 +307,14 @@ def get_session_tokens():
             }
             return session, tokens
         else:
-            print(f"[get_session_tokens] Tentativo {attempt}: GXState non trovato. Ritento...")
+            print(f"[get_session_tokens] Attempt {attempt}: GXState not found. Retrying...")
             if attempt < max_retries:
                 import time
                 time.sleep(2)
             else:
-                print("[get_session_tokens] Errore: GXState non trovato dopo vari tentativi.")
-                print(response.text[:1000])  # Stampa i primi 1000 caratteri per debug
-                raise RuntimeError("GXState non trovato nella pagina iniziale")
+                print("[get_session_tokens] Error: GXState not found after several attempts.")
+                print(response.text[:1000])  # Print first 1000 characters for debug
+                raise RuntimeError("GXState not found in initial page")
 
 def extract_pdf_url_from_html(html):
     """
@@ -295,26 +328,26 @@ def extract_pdf_url_from_html(html):
 
 def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     """
-    Versione sequenziale: scarica prima PDF, poi CSV, e salva i metadati sul db.
+    Sequential version: downloads first PDFs, then CSVs, and saves metadata to the database.
     """
     session, tokens = get_session_tokens()
-    risultati, _ = search_files_by_company(edinet_code, session=session)
-    print(f"Totale risultati per {edinet_code}: {len(risultati)}")
+    results, _ = search_files_by_company(edinet_code, session=session)
+    print(f"Total results for {edinet_code}: {len(results)}")
 
     import utils.db_utils as db_utils
-    # Scarica PDF
-    pdf_stats ,pdf_metadata = download_pdfs(risultati, edinet_code, session, tokens, max_files, max_workers)
-    # Scarica CSV
-    csv_stats ,csv_metadata = download_csvs(risultati, edinet_code, session, tokens, max_files, max_workers)
-    # Salva i metadati su MongoDB
-    # Preparo dizionario per batch insert
+    # Download PDFs
+    pdf_stats, pdf_metadata = download_pdfs(results, edinet_code, session, tokens, max_files, max_workers)
+    # Download CSVs
+    csv_stats, csv_metadata = download_csvs(results, edinet_code, session, tokens, max_files, max_workers)
+    # Save metadata to MongoDB
+    # Prepare dictionary for batch insert
     all_metadata = pdf_metadata + csv_metadata
-        
+
     #from pprint import pprint
     #pprint(all_metadata)
-        
+
     db_utils.save_company_files(all_metadata)
-    # Unisco statistiche e metadati
+    # Merge statistics and metadata
     stats_per_company = {
         "pdf_downloaded": pdf_stats.get("pdf_downloaded", 0),
         "pdf_not_found": pdf_stats.get("pdf_not_found", 0),
@@ -330,15 +363,12 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
 
 if __name__ == "__main__":
     try:
-        # Esegui la pulizia del CSV e schedula i task a batch
-        
+        # Run CSV cleaning and schedule batch tasks
         #codeList_utils.get_codeList()
         #codeList_utils.clean_CodeList()
         #schedule_tasks_from_codeList(batch_size=10)
         #from utils.db_utils import clear_db
         #clear_db()
         extract_all_for_company("E02166", max_files=5, max_workers=16)
-    
-        
     except KeyboardInterrupt:
         print("Exit....")
