@@ -17,8 +17,13 @@ PDF and CSV files scraper for the EDINET JPN website.
 
 3. **Start the ETL service**
    ```bash
-   docker-compose up etl
+   docker-compose up -d etl
    ```
+
+4. **Run the pipeline from the container**
+    ```bash
+    docker-compose exec etl python src/pipeline.py
+    ```
 
 ## Notes
 

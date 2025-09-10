@@ -174,11 +174,11 @@ def search_files_by_company(edinet_code, session=None):
         data_page = response_page.json()
         results_json = data_page.get("gxValues", [{}])[0].get("AV113W_RESULT_LIST_JSON", "[]")
         results = json.loads(results_json)
-        # Filtro per codice edinet richiesto
+    # Filter only results for the requested EDINET code
         results = [r for r in results if r.get("EDINET_CD") == edinet_code]
         all_results.extend(results)
 
-    # Deduplicazione basic
+    # Basic deduplication
     seen = set()
     deduped = []
     for r in all_results:

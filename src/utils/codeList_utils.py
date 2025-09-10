@@ -74,9 +74,9 @@ def get_codeList():
         "ajax_security_token": ajax_token,
         "x-gxauth-token": gx_auth_token,
     }
-    print("[get_codeList] Sending POST request to download ZIP...")
+    #print("[get_codeList] Sending POST request to download ZIP...")
     response = session.post(url, headers=headers, json=payload)
-    print(f"[get_codeList] POST completed, status: {response.status_code}")
+    #print(f"[get_codeList] POST completed, status: {response.status_code}")
     data = response.json()
     dl_script = data.get("gxProps", [{}])[0].get("TXTSCRIPT", {}).get("Caption", "")
     import re
@@ -87,10 +87,10 @@ def get_codeList():
     base64_data = match.group(1)
     file_data = base64.b64decode(base64_data)
     import zipfile, io
-    print("[get_codeList] Extracting ZIP...")
+    #print("[get_codeList] Extracting ZIP...")
     with zipfile.ZipFile(io.BytesIO(file_data)) as z:
         for name in z.namelist():
-            print(f"[get_codeList] File found in ZIP: {name}")
+            #print(f"[get_codeList] File found in ZIP: {name}")
             if name.endswith(".csv"):
                 os.makedirs(DATA_DIR, exist_ok=True)
                 out_path = os.path.join(DATA_DIR, name)
