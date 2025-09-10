@@ -13,7 +13,7 @@ from workers.csv_worker import download_csv_worker
 from workers.pdf_worker import download_pdf_worker
 
 """Portable paths"""
-DATA_DIR = os.path.join(os.path.dirname(__file__),".." ,"data") 
+from utils.paths import DATA_DIR, PROJECT_ROOT
 output_csv_path = os.path.join(DATA_DIR, "Edinet_codeList.csv")
     
 def search_files_by_company(edinet_code, session=None):

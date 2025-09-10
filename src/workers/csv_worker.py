@@ -2,11 +2,8 @@ import os
 import time
 import re
 import base64
-
-UTILS_DIR = os.path.dirname(__file__)         # .../src/utils
-SRC_DIR = os.path.dirname(UTILS_DIR)          # .../src
-PROJECT_ROOT = os.path.dirname(SRC_DIR)       # .../
-DATA_DIR = os.path.join(PROJECT_ROOT, 'data') # .../data
+from utils.paths import PROJECT_ROOT, DATA_DIR
+from utils.metadata import generate_metadata
 
 def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
     """
@@ -21,9 +18,8 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
     
     #save_dir = os.path.join(project_root, "data", edinet_code, "csv", document_type)
     
-    relative_path = os.path.join("data", edinet_code, "csv", document_type)
-    relative_path = relative_path.replace("\\", "/")
-    save_dir = os.path.join(PROJECT_ROOT, relative_path)
+    save_dir = os.path.join(DATA_DIR, edinet_code, "csv", document_type)
+    relative_path = os.path.relpath(save_dir, PROJECT_ROOT).replace("\\", "/")
     #print(f"CSV save_dir: {save_dir}")
     
     if not os.path.exists(save_dir):

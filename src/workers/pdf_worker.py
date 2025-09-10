@@ -1,12 +1,8 @@
 import os
 import time
 import re
-
-# Path management: nested dirname for portability
-WORKERS_DIR = os.path.dirname(__file__)         # .../src/workers
-SRC_DIR = os.path.dirname(WORKERS_DIR)          # .../src
-PROJECT_ROOT = os.path.dirname(SRC_DIR)         # .../
-DATA_DIR = os.path.join(PROJECT_ROOT, 'data')   # .../data
+from utils.paths import PROJECT_ROOT, DATA_DIR
+from utils.metadata import generate_metadata
 
 def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
     """
@@ -105,8 +101,8 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
                 filename = os.path.join(save_dir, f"{document_name}.pdf")
                 with open(filename, "wb") as f:
                     f.write(pdf_file_response.content)
-                metadata = generate_MetaData(doc, relative_path, "pdf")
-                return True, (filename, metadata)
+                metadata = generate_metadata(doc, relative_path, "pdf")
+                return True, (None, metadata)
             else:
                 raise Exception("PDF download failed")
         except Exception as e:
@@ -116,32 +112,5 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
                 return False, (f"Attempt {attempt}: {str(e)}",None)
 
 
-def generate_MetaData(doc, relative_path, file_type):
-    try:
-        metadata = {
-            "file_path": relative_path,
-            "file_type": file_type,
-            "document_name": doc.get("SHORUI_KANRI_NO", "unknown"),
-            "document_type_code": doc.get("SYORUI_SB_CD_ID", "unknown"),
-            "document_type_name": doc.get("SHORUI_NAME", "unknown"),
-            "document_category": doc.get("YOUSIKI_NAME", "unknown"),
-            "pubblication_date": doc.get("TEISHUTSU_NICHIJI", "unknown"),
-            "company_name": doc.get("TEISYUTUSYA_NAME", "unknown"),
-            "target_company": doc.get("IGAITEISYUTUSYANAME", "unknown"),
-            "edinet_code": doc.get("EDINET_CD", "unknown")
-        }
-        def extract_dates_from_type_name(type_name):
-            # Cerca pattern tipo (YYYY.MM.DD-YYYY.MM.DD)
-            match = re.search(r"(\d{4}\.\d{2}\.\d{2})-(\d{4}\.\d{2}\.\d{2})", type_name)
-            if match:
-                return match.group(1), match.group(2)
-            return None, None
+## Legacy generate_MetaData removed (migrated to utils.metadata.generate_metadata)
 
-        type_name = doc.get("SHORUI_NAME", "")
-        period_start, period_end = extract_dates_from_type_name(type_name)
-        metadata["period_start"] = period_start 
-        metadata["period_end"] = period_end 
-            
-        return metadata
-    except Exception as e:
-        return {"error": str(e), "file_path": relative_path}

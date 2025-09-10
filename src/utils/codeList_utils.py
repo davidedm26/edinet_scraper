@@ -2,12 +2,7 @@ import pandas as pd
 import os
 import requests
 import base64
-
-# Get the directory of the current file
-UTILS_DIR = os.path.dirname(__file__)
-SRC_DIR = os.path.dirname(UTILS_DIR)
-PROJECT_ROOT = os.path.dirname(SRC_DIR)
-DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
+from utils.paths import DATA_DIR
 
 def clean_CodeList(input_path=None, output_path=None):
     """
