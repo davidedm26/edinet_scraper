@@ -3,6 +3,11 @@ import time
 import re
 import base64
 
+UTILS_DIR = os.path.dirname(__file__)         # .../src/utils
+SRC_DIR = os.path.dirname(UTILS_DIR)          # .../src
+PROJECT_ROOT = os.path.dirname(SRC_DIR)       # .../
+DATA_DIR = os.path.join(PROJECT_ROOT, 'data') # .../data
+
 def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
     """
     Worker function for downloading a single CSV document.
@@ -14,12 +19,11 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
 
     document_type = doc.get("SYORUI_SB_CD_ID", "unknown") # Document Type Code
     
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     #save_dir = os.path.join(project_root, "data", edinet_code, "csv", document_type)
     
     relative_path = os.path.join("data", edinet_code, "csv", document_type)
     relative_path = relative_path.replace("\\", "/")
-    save_dir = os.path.join(project_root, relative_path)
+    save_dir = os.path.join(PROJECT_ROOT, relative_path)
     #print(f"CSV save_dir: {save_dir}")
     
     if not os.path.exists(save_dir):

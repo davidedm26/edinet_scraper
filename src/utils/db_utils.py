@@ -23,7 +23,7 @@ def connect_mongo(uri="mongodb://localhost:27017/", db_name="edinet"):
 
 
 # Usa un dizionario per gestire i file e inserisci i metadati con insert_many per efficienza.
-def save_company_files_from_dict(file_dict):
+def save_company_files(file_dict):
     db = connect_mongo()
     if file_dict:
         collection = db["files"]

@@ -313,7 +313,7 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     #from pprint import pprint
     #pprint(all_metadata)
         
-    db_utils.save_company_files_from_dict(all_metadata)
+    db_utils.save_company_files(all_metadata)
     # Unisco statistiche e metadati
     stats_per_company = {
         "pdf_downloaded": pdf_stats.get("pdf_downloaded", 0),
@@ -335,8 +335,8 @@ if __name__ == "__main__":
         #codeList_utils.get_codeList()
         #codeList_utils.clean_CodeList()
         #schedule_tasks_from_codeList(batch_size=10)
-        from utils.db_utils import clear_db
-        clear_db()
+        #from utils.db_utils import clear_db
+        #clear_db()
         extract_all_for_company("E02166", max_files=5, max_workers=16)
     
         

@@ -2,6 +2,12 @@ import os
 import time
 import re
 
+# Path management: nested dirname for portability
+WORKERS_DIR = os.path.dirname(__file__)         # .../src/workers
+SRC_DIR = os.path.dirname(WORKERS_DIR)          # .../src
+PROJECT_ROOT = os.path.dirname(SRC_DIR)         # .../
+DATA_DIR = os.path.join(PROJECT_ROOT, 'data')   # .../data
+
 def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
     """
     Worker function for downloading a single PDF document.
@@ -16,12 +22,9 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
     if not doc.get("SYORUI_KANRI_NO_ENCRYPT"):
         return False, "No PDF for this document"
 
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    
-    #save_dir = os.path.join(project_root, "data", edinet_code, "pdf", document_type)
-    relative_path = os.path.join("data", edinet_code, "pdf", document_type)
-    relative_path = relative_path.replace("\\", "/")
-    save_dir = os.path.join(project_root, relative_path)
+    # Use DATA_DIR for base data path
+    save_dir = os.path.join(DATA_DIR, edinet_code, "pdf", document_type)
+    relative_path = os.path.relpath(save_dir, PROJECT_ROOT).replace("\\", "/")
 
     #print(f"PDF save_dir: {save_dir}")
     if not os.path.exists(save_dir):
@@ -100,13 +103,10 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
                 
                 
                 filename = os.path.join(save_dir, f"{document_name}.pdf")
-                
                 with open(filename, "wb") as f:
                     f.write(pdf_file_response.content)
-                    
                 metadata = generate_MetaData(doc, relative_path, "pdf")
-                
-                return True, (None, metadata)
+                return True, (filename, metadata)
             else:
                 raise Exception("PDF download failed")
         except Exception as e:
