@@ -1,3 +1,4 @@
+import argparse
 from utils.db_utils import populate_companies_collection, connect_mongo, clear_db
 from utils.scraper import extract_all_for_company
 from utils.codeList_utils import build_codeList_file
@@ -22,20 +23,23 @@ def process_pending_companies():
                 {"$set": {"status": "error", "error": str(e)}}
             )
 
-def run_pipeline( START_FROM_ZERO=False ):
+def run_pipeline(START_FROM_ZERO=False):
     try:
-        # Populate the companies collection (only if needed)
-        if (START_FROM_ZERO == True):
+        if START_FROM_ZERO:
             clear_db()
             reset_data_folder()
-
-        build_codeList_file()  # Download and clean the codeList file
+        build_codeList_file()
         populate_companies_collection(os.path.join(DATA_DIR, "Edinet_codeList.csv"))
         process_pending_companies()
     except KeyboardInterrupt:
         print("Keyboard interruption detected. Exiting the program.")
-    
 
 if __name__ == "__main__":
-    
-    run_pipeline()
+    parser = argparse.ArgumentParser(description="Run EDINET pipeline.")
+    parser.add_argument(
+        "--start-from-zero",
+        action="store_true",
+        help="Clear DB and reset data folder before running pipeline"
+    )
+    args = parser.parse_args()
+    run_pipeline(args.start_from_zero)

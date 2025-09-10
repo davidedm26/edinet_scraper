@@ -84,8 +84,7 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
                 with open(filename, "wb") as f:
                     f.write(file_data)
                     
-                from workers.pdf_worker import generate_MetaData
-                metadata = generate_MetaData(doc, relative_path, "csv")
+                metadata = generate_metadata(doc, relative_path, "csv")
                 return True, (None, metadata)
             
             except Exception as file_exc:
@@ -96,34 +95,3 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
                 time.sleep(2)
             else:
                 return False, (f"Attempt {attempt}: {str(e)}",None)
-"""
-def generate_MetaData(doc, relative_path):
-    try:
-        metadata = {
-            "file_path": relative_path,
-            "file_type": "CSV",
-            "document_name": doc.get("SHORUI_KANRI_NO", "unknown"),
-            "document_type_code": doc.get("SYORUI_SB_CD_ID", "unknown"),
-            "document_type_name": doc.get("SHORUI_NAME", "unknown"),
-            "document_category": doc.get("YOUSIKI_NAME", "unknown"),
-            "pubblication_date": doc.get("TEISHUTSU_NICHIJI", "unknown"),
-            "company_name": doc.get("TEISYUTUSYA_NAME", "unknown"),
-            "target_company": doc.get("IGAITEISYUTUSYANAME", "unknown"),
-            "edinet_code": doc.get("EDINET_CD", "unknown")
-        }
-        def extract_dates_from_shorui_name(shorui_name):
-            # Cerca pattern tipo (YYYY.MM.DD-YYYY.MM.DD)
-            match = re.search(r"(\d{4}\.\d{2}\.\d{2})-(\d{4}\.\d{2}\.\d{2})", shorui_name)
-            if match:
-                return match.group(1), match.group(2)
-            return None, None
-
-        shorui_name = doc.get("SHORUI_NAME", "")
-        period_start, period_end = extract_dates_from_shorui_name(shorui_name)
-        metadata["period_start"] = period_start 
-        metadata["period_end"] = period_end 
-            
-        return metadata
-    except Exception as e:
-        return {"error": str(e), "file_path": relative_path}
-"""

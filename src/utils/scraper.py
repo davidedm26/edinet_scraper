@@ -174,9 +174,21 @@ def search_files_by_company(edinet_code, session=None):
         data_page = response_page.json()
         results_json = data_page.get("gxValues", [{}])[0].get("AV113W_RESULT_LIST_JSON", "[]")
         results = json.loads(results_json)
+        # Filtro per codice edinet richiesto
         results = [r for r in results if r.get("EDINET_CD") == edinet_code]
         all_results.extend(results)
-    return all_results, tokens
+
+    # Deduplicazione basic
+    seen = set()
+    deduped = []
+    for r in all_results:
+        key = ((r.get("SHORUI_KANRI_NO") or r.get("SYORUI_KANRI_NO_ENCRYPT")), r.get("EDINET_CD"))
+        if key not in seen:
+            seen.add(key)
+            deduped.append(r)
+    if len(deduped) != len(all_results):
+        print(f"Dedup: {len(all_results)} -> {len(deduped)}")
+    return deduped, tokens
 
 
 def download_pdfs(results, edinet_code, session, tokens, max_files=300, max_workers=32):
@@ -332,7 +344,7 @@ def extract_all_for_company(edinet_code, max_files=300, max_workers=16):
     """
     session, tokens = get_session_tokens()
     results, _ = search_files_by_company(edinet_code, session=session)
-    print(f"Total results for {edinet_code}: {len(results)}")
+    print(f"Total unique results for {edinet_code}: {len(results)}")
 
     import utils.db_utils as db_utils
     # Download PDFs
@@ -369,6 +381,6 @@ if __name__ == "__main__":
         #schedule_tasks_from_codeList(batch_size=10)
         #from utils.db_utils import clear_db
         #clear_db()
-        extract_all_for_company("E02166", max_files=5, max_workers=16)
+        extract_all_for_company("E02166", max_files=5, max_workers=32)
     except KeyboardInterrupt:
         print("Exit....")
