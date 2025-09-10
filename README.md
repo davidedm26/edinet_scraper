@@ -1,2 +1,29 @@
 # edinet_scraper
-Pdfs and CSVs files scraper for the EDINET JPN website
+
+PDF and CSV files scraper for the EDINET JPN website.
+
+## Environment Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/davidedm26/edinet_scraper.git
+   cd edinet_scraper
+   ```
+
+2. **Build the Docker image**
+   ```bash
+   docker-compose build etl
+   ```
+
+3. **Start the ETL service**
+   ```bash
+   docker-compose up etl
+   ```
+
+## Notes
+
+- Make sure Docker and Docker Compose are installed.
+- Downloaded files will be available in the `data/` folder.
+- MongoDB is managed automatically via Docker Compose.
+
+For usage details and configuration, see
