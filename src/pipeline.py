@@ -37,4 +37,4 @@ def run_pipeline( START_FROM_ZERO=False ):
 
 if __name__ == "__main__":
     
-    run_pipeline(True)
+    run_pipeline()
