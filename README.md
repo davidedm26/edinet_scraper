@@ -2,7 +2,7 @@
 
 End-to-end scraper to download public EDINET filings (PDFs and CSVs), persist file metadata to MongoDB, and organize outputs in a portable `data/` layout.
 
-This guide walks you through prerequisites, setup, running, retrying failed companies, and where to find results.
+This guide walks you through prerequisites, setup, running, and where to find results.
 
 ## Background
 EDINET is the Japanese Financial Services Agency’s electronic disclosure system where all publicly listed Japanese companies publish regulated filings and disclosures. Reliable access to, and processing of, this data is crucial for analytical, compliance, and research applications.
@@ -88,14 +88,33 @@ python src/pipeline.py
 ```
 
 ## Data & Metadata
-
-- Files are stored under `data/<EDINET_CODE>/<pdf|csv>/<DOCUMENT_TYPE>/...`
+- Downloaded files will be available in the `data/` folder.
+- In particular, files are stored under `data/<EDINET_CODE>/<pdf|csv>/<DOCUMENT_TYPE>/...`
 - File metadata are stored in MongoDB `files` collection with a unique index on `(document_name, file_type, edinet_code)`
 - Companies, their scraping stats and their processing status live in the `companies` collection
 
 
-## Notes
 
-- Downloaded files will be available in the `data/` folder.
+## Stats
+
+You can generate aggregate statistics about processed companies and downloaded files using `stats/stats.py`.
+
+Inside Docker (recommended after a pipeline run):
+
+```bash
+docker-compose exec etl python src/stats/stats.py
+```
+
+Locally (ensure your virtualenv is active and `MONGO_URI` is set):
+
+```bash
+python src/stats/stats.py
+```
+
+The script queries MongoDB and prints + writes a JSON file at `data/stats_summary.json`:
+- Total companies (by status)
+- Totals of PDFs/CSVs downloaded / not found / errors
+- Aggregate elapsed time and per-second throughput indicators
+
 
 

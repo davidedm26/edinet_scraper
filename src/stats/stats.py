@@ -6,6 +6,7 @@ import json
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from utils.db_utils import connect_mongo
+from utils.paths import DATA_DIR
 
 
 NUMERIC_KEYS = [
@@ -83,5 +84,11 @@ def aggregate_totals(include_averages: bool = True):
 
 
 if __name__ == "__main__":
-    print(json.dumps(aggregate_totals(), indent=2))
+    summary = aggregate_totals()
+    print(json.dumps(summary, indent=2))
+    out_path = os.path.join(DATA_DIR, "stats_summary.json")
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+    print(f"Stats JSON written to: {out_path}")
 
