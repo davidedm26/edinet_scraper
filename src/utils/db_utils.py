@@ -1,28 +1,28 @@
 import pandas as pd
-# Funzione per popolare la collection 'companies' da Edinet_codeList.csv
+# Function to populate the 'companies' collection from Edinet_codeList.csv
 
 from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
 
 def connect_mongo(uri="mongodb://localhost:27017/", db_name="edinet"):
-    # Crea indice unico su document_name+company_name se non esiste
+    # Create unique index on document_name + file_type + edinet_code if not present
     from pymongo.errors import PyMongoError
     import os
     mongo_uri = os.environ.get("MONGO_URI", uri)
     client = MongoClient(mongo_uri)
     db = client[db_name]
-    # Crea indice unico su document_name+company_name se non esiste
+    # Create unique index on document_name + file_type + edinet_code if not present
     try:
         db["files"].create_index(
             [("document_name", 1), ("file_type", 1), ("edinet_code", 1)],
             unique=True
         )
     except PyMongoError as e:
-        print(f"Errore creazione indice: {e}")
+        print(f"Index creation error: {e}")
     return db
 
 
-# Usa un dizionario per gestire i file e inserisci i metadati con insert_many per efficienza.
+# Use a list of documents and insert_many for efficiency.
 def save_company_files(file_dict):
     db = connect_mongo()
     if file_dict:
@@ -31,15 +31,15 @@ def save_company_files(file_dict):
             collection.insert_many(file_dict, ordered=False)
             print(f"Saved {len(file_dict)} documents in 'files'.")
         except BulkWriteError as bwe:
-            # Ignora solo i duplicati, mostra altri errori
+            # Ignore only duplicates, show other errors
             for error in bwe.details.get("writeErrors", []):
                 if error.get("code") == 11000:
                     op = error.get('op', {})
-                    print(f"Duplicato: document_name={op.get('document_name')}, file_type={op.get('file_type')}, edinet_code={op.get('edinet_code')}")
+                    print(f"Duplicate: document_name={op.get('document_name')}, file_type={op.get('file_type')}, edinet_code={op.get('edinet_code')}")
                 else:
-                    print(f"Errore inserimento: {error}")
+                    print(f"Insert error: {error}")
         except Exception as e:
-            print(f"Errore inserimento batch: {e}")
+            print(f"Batch insert error: {e}")
 
 def find_company_files(edinet_code):
     db = connect_mongo()
@@ -53,7 +53,7 @@ def populate_companies_collection(csv_path):
     """
     import os
     if not os.path.exists(csv_path):
-        print(f"Errore: il file '{csv_path}' non esiste.")
+        print(f"Error: file '{csv_path}' does not exist.")
         return
 
     db = connect_mongo()
@@ -67,7 +67,7 @@ def populate_companies_collection(csv_path):
             "company_name": company_name,
             "status": "pending"
         })
-    # Crea indice unico se non esiste
+    # Create unique index if not present
     db["companies"].create_index([
         ("edinet_code", 1)
     ], unique=True)
@@ -75,7 +75,7 @@ def populate_companies_collection(csv_path):
         from pymongo.errors import BulkWriteError
         try:
             result = db["companies"].insert_many(companies, ordered=False)
-            print(f"Aziende aggiunte: {len(result.inserted_ids)}")
+            print(f"Companies added: {len(result.inserted_ids)}")
         except BulkWriteError as bwe:
             duplicate_count = sum(1 for error in bwe.details.get("writeErrors", []) if error.get("code") == 11000)
             added_count = len(companies) - duplicate_count
@@ -88,12 +88,12 @@ def populate_companies_collection(csv_path):
 
 def clear_db():
     """
-    Svuota le collection 'companies' e 'files' dal database MongoDB.
+    Empty the 'companies' and 'files' collections from the MongoDB database.
     """
     db = connect_mongo()
     db["companies"].delete_many({})
     db["files"].delete_many({})
-    print("Le collection 'companies' e 'files' sono state svuotate.")
+    print("Collections 'companies' and 'files' have been emptied.")
 
 
 if __name__ == "__main__":

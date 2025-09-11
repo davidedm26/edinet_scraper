@@ -22,10 +22,6 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
     relative_path = os.path.relpath(save_dir, PROJECT_ROOT).replace("\\", "/")
     #print(f"CSV save_dir: {save_dir}")
     
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir, exist_ok=True)
-        
-    
     hsh_list = [tokens.get("gx_hash_name"), tokens.get("gx_hash_desc")]
     url = "https://disclosure2.edinet-fsa.go.jp/WEEE0040.aspx"
     headers = {
@@ -81,6 +77,9 @@ def download_csv_worker(doc, edinet_code, session, tokens, max_retries=3):
             document_name = doc.get("SHORUI_KANRI_NO", "unknown") #Document Name
             filename = os.path.join(save_dir, f"{document_name}.zip")
             try:
+                # Create directory lazily only when writing the file
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir, exist_ok=True)
                 with open(filename, "wb") as f:
                     f.write(file_data)
                     

@@ -25,13 +25,17 @@ def process_pending_companies():
             stats = extract_all_for_company(edinet_code, max_files=10000, max_workers=32)
             db["companies"].update_one(
                 {"edinet_code": edinet_code},
-                {"$set": {"status": "done", "stats": stats}}
+                {"$set": {"status": "done", "stats": stats}, "$unset": {"attempts": ""}}
             )
         except Exception as e:
             db["companies"].update_one(
                 {"edinet_code": edinet_code},
-                {"$set": {"status": "error"}}
+                {"$set": {"status": "error"}, "$inc": {"attempts": 1}}
             )
+            print(f"Error processing {edinet_code}: {e}")
+            # Optional: wait a bit before continuing to avoid rapid failures
+            import time as _t
+            _t.sleep(5)  # Wait 5 seconds before continuing
 
 def run_pipeline(START_FROM_ZERO=False):
     try:
@@ -78,6 +82,19 @@ def run_with_retries(start_from_zero: bool, max_retries: int = 3, delay_seconds:
                 print("[PIPELINE] Interrupted during wait. Exiting.")
                 return
 
+def retry_error_companies(max_attempts: int = 3):
+    """
+    - Init attempts to 0 if missing.
+    - Mark as 'failed' those with attempts >= max_attempts.
+    - Set remaining 'error' companies to 'pending'.
+    - Process pending once.
+    """
+    db = connect_mongo()
+    # Ensure attempts exists only for error companies missing the field
+    db["companies"].update_many({"status": "error", "attempts": {"$exists": False}}, {"$set": {"attempts": 0}})
+    db["companies"].update_many({"status": "error", "attempts": {"$gte": max_attempts}}, {"$set": {"status": "failed"}})
+    db["companies"].update_many({"status": "error", "attempts": {"$lt": max_attempts}}, {"$set": {"status": "pending"}})
+    process_pending_companies()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run EDINET pipeline.")

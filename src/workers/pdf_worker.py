@@ -23,8 +23,6 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
     relative_path = os.path.relpath(save_dir, PROJECT_ROOT).replace("\\", "/")
 
     #print(f"PDF save_dir: {save_dir}")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir, exist_ok=True)
     kanri_no_encrypt = doc.get("SYORUI_KANRI_NO_ENCRYPT")
     if not kanri_no_encrypt:
         return False, "Missing SYORUI_KANRI_NO_ENCRYPT"
@@ -99,6 +97,9 @@ def download_pdf_worker(doc, edinet_code, session, tokens, max_retries=3):
                 
                 
                 filename = os.path.join(save_dir, f"{document_name}.pdf")
+                # Create directory lazily only when writing the file
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir, exist_ok=True)
                 with open(filename, "wb") as f:
                     f.write(pdf_file_response.content)
                 metadata = generate_metadata(doc, relative_path, "pdf")
