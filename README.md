@@ -7,6 +7,9 @@ This guide walks you through prerequisites, setup, running, and where to find re
 ## Background
 EDINET is the Japanese Financial Services Agency’s electronic disclosure system where all publicly listed Japanese companies publish regulated filings and disclosures. Reliable access to, and processing of, this data is crucial for analytical, compliance, and research applications.
 
+![EDINET Website](img\website_screenshot.png)
+
+
 
 ## Prerequisites
 
