@@ -18,7 +18,7 @@ Introduced MongoDB collections for companies (processing status) and files (meta
 Added Docker setup: `Dockerfile` for a reproducible image (deps + code) and `docker-compose.yml` to run scraper + MongoDB together. Defined env vars (e.g. `MONGO_URI`), bind‑mounted `data/` for persistence, internal network for stable communication. Goal: one‑command onboarding and environment isolation.
 
 ## 6. Operational Hardening
-Added retries for failed companies, lightweight attempt tracking, unified paths for portability and environment‑driven configuration.
+Added retries for failed companies search, lightweight attempt tracking, unified paths for portability and environment‑driven configuration.
 
 ## 7. Documentation & Statistics
 Expanded README (background, setup paths, stats usage). Added aggregated statistics export (JSON) for monitoring throughput and error distribution. 
