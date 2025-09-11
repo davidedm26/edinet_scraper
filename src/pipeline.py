@@ -106,3 +106,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # Run with fixed retries (default: 3 attempts, 10s delay)
     run_with_retries(args.start_from_zero, max_retries=3, delay_seconds=10)
+    retry_error_companies(max_attempts=3)

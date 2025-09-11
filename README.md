@@ -1,8 +1,11 @@
 # EDINET Scraper ETL
 
+## Background
+EDINET is the Japanese Financial Services Agency’s electronic disclosure system where all publicly listed Japanese companies publish regulated filings and disclosures. Reliable access to, and processing of, this data is crucial for analytical, compliance, and research applications.
+
 End-to-end scraper to download public EDINET filings (PDFs and CSVs), persist file metadata to MongoDB, and organize outputs in a portable `data/` layout.
 
-Inspired by documentation-style READMEs like “How to Scrape Amazon Prices”, this guide walks you through prerequisites, setup, running, retrying failed companies, and where to find results.
+This guide walks you through prerequisites, setup, running, retrying failed companies, and where to find results.
 
 ## Prerequisites
 
@@ -33,10 +36,12 @@ docker-compose exec etl python src/pipeline.py
 
 This will:
 - Generate/update the EDINET code list
-- Populate the `companies` collection
+- Populate/update the `companies` collection 
 - Process pending companies, downloading PDFs and CSVs, and saving metadata
 
 ## Running Locally (without Docker)
+> **Note:** MongoDB runs via Docker Compose by default; you must start your own MongoDB instance and override `MONGO_URI`.
+
 
 1) Create and activate a Python 3.11 environment
 
@@ -51,7 +56,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-3) Start MongoDB (locally) or set `MONGO_URI`
+3) Start your MongoDB instance and set `MONGO_URI` 
 
 ```bash
 set MONGO_URI=mongodb://localhost:27017
@@ -63,28 +68,12 @@ set MONGO_URI=mongodb://localhost:27017
 python src/pipeline.py
 ```
 
-## Retrying Failed Companies (simple mode)
-
-If some companies ended with status `error`, you can do a one-shot retry with a max attempts limit. Inside the container or locally:
-
-```bash
-python -c "from src.pipeline import retry_error_companies; retry_error_companies(max_attempts=3)"
-```
-
-Behavior:
-- Companies in `error` get an `attempts` counter. On success (`done`), the `attempts` field is removed.
-- Companies reaching the max attempts can be marked as `failed` (not retried further), depending on your settings.
-
 ## Data & Metadata
 
 - Files are stored under `data/<EDINET_CODE>/<pdf|csv>/<DOCUMENT_TYPE>/...`
 - File metadata is stored in MongoDB `files` collection with a unique index on `(document_name, file_type, edinet_code)`
 - Companies and their processing status live in the `companies` collection
 
-## Configuration
-
-- `MONGO_URI` (env): MongoDB connection string
-- Concurrency & limits are defined in `src/utils/scraper.py` and `src/pipeline.py`
 
 ## Troubleshooting
 
@@ -95,8 +84,5 @@ Behavior:
 ## Notes
 
 - Downloaded files will be available in the `data/` folder.
-- MongoDB runs via Docker Compose by default; override `MONGO_URI` if you run your own instance.
 
----
 
-If you have questions or ideas, open an issue or PR in this repository.
