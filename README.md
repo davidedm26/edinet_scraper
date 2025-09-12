@@ -15,7 +15,7 @@ EDINET is the Japanese Financial Services Agency’s electronic disclosure syste
 - Docker and Docker Compose installed
 - Optionally, Python 3.11+ and a running MongoDB instance if you plan to run the pipeline locally (without Docker)
 
-## Quick Start (Docker)
+## Quick Start with Docker [RECOMMENDED]
 
 1) Clone this repository
 
